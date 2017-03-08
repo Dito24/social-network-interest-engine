@@ -52,6 +52,39 @@ def get_ontology_types(subject):
     return types
 
 
+@retry(wait_exponential_multiplier=1000, wait_exponential_max=20000, stop_max_delay=120000)
+def get_ontology_super_class(subclass):
+    if not subclass:
+        return None
+
+    sparql = SPARQLWrapper("http://dbpedia.org/sparql")
+    sparql.setQuery("""
+            PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+            SELECT ?superclass
+            WHERE {
+            dbo:%s rdfs:subClassOf ?superclass
+            FILTER (strstarts(str(?superclass), "http://dbpedia.org/ontology/"))
+            }
+        """ % subclass.replace(" ", ""))
+
+    sparql.setReturnFormat(JSON)
+    try:
+        results = sparql.query().convert()
+    except (HTTPError, SPARQLExceptions.EndPointInternalError,
+            SPARQLExceptions.EndPointNotFound, SPARQLExceptions.QueryBadFormed):
+        raise Exception("Retry!")
+
+    try:
+        if 'results' in locals():
+            values = camel_case_split((results["results"]["bindings"][0]["superclass"]["value"])
+                                      .replace("http://dbpedia.org/ontology/", ""))
+            return ' '.join(values)
+        else:
+            return None
+    except (IndexError, TypeError):
+        return None
+
+
 def get_knowledge_graph_result(keyword):
     # improve mechanism to retrieve the key
     kg_key = os.environ['GOOGLE_KNOWLEDGE_GRAPH_KEY']
@@ -146,12 +179,12 @@ def get_ontology_data(keyword):
         results.extend(results[2].rsplit(',', 1))
         del results[2]
 
-        # try:
-        #     types = get_ontology_types(results[0])
-        # except Exception:
-        #     types = []
-        #
-        # results.append(list(set(types) - {results[1].title()}))
+        try:
+            types = get_ontology_types(results[0])
+        except Exception:
+            types = []
+
+        results.append(list(set(types) - {results[1].title()}))
 
         entities.append(results)
 

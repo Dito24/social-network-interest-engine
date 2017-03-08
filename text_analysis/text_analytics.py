@@ -43,7 +43,10 @@ def get_entity_fractions(entities, text):
     for entry in frequencies:
         entity = entry['entity']
 
-        fraction = entry['frequency'] / total_frequencies
+        if total_frequencies > 0:
+            fraction = entry['frequency'] / total_frequencies
+        else:
+            fraction = 0
         fractions.append({'entity': entity, 'fraction': fraction})
 
     return fractions

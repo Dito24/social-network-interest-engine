@@ -30,7 +30,7 @@ def get_trend_data_client():
     return google_trends
 
 # create a client to acquire historical trend data
-trend_data_client = get_trend_data_client()
+CLIENT = get_trend_data_client()
 
 
 @retry(wait_exponential_multiplier=1000, wait_exponential_max=20000, stop_max_delay=120000)
@@ -38,7 +38,7 @@ def get_historical_trends(keywords):
     payload = {'q': keywords, 'date': 'now 12-H'}
 
     try:
-        response = trend_data_client.trend(payload, return_type='json')
+        response = CLIENT.trend(payload, return_type='json')
     except (ResponseError, JSONDecodeError, RateLimitError):
         raise Exception("Retry!")
 
