@@ -141,6 +141,7 @@ def update_latest_status_ids(key, value):
             file.write(key + ":" + str(value) + "\n")
 
 
+# build interest tree
 def build_interest_topic_tree(tags):
     if not tags:
         return None
@@ -154,7 +155,9 @@ def build_interest_topic_tree(tags):
             continue
 
         if sub_types is not None:
+            # sort the types based on ontology class hierarchy
             sorted_types = sort_class_order(sub_types)
+
             if sorted_types is not None:
                 sorted_types.insert(0, 'Thing')
                 create_branch(clusters, sorted_types)
@@ -214,6 +217,25 @@ def return_key(dictionary, value):
     return matching_value
 
 
+def add_interest_tags(tree_structure, tags):
+    if not (tags, tree_structure):
+        return None
+
+    for tag in tags:
+        try:
+            sub_types = tag.context['sub_types']
+        except (KeyError, TypeError):
+            continue
+
+        if sub_types is not None:
+            # sort the types based on ontology class hierarchy
+            sorted_types = sort_class_order(sub_types)
+
+            if sorted_types is not None:
+                sorted_types.insert(0, 'Thing')
+                tree_structure.get_node(sorted_types[len(sorted_types) - 1]).data.append(tag)
+
+
 # TODO: temp method
 def get_app_root():
     try:
@@ -222,6 +244,7 @@ def get_app_root():
         sys.stderr.write("Application Root environmental variable not set\n")
         sys.exit(1)
 
+
 if __name__ == "__main__":
     statuses = load_statuses(get_app_root() + '/content/bookmarks.jsonl')
 
@@ -229,11 +252,7 @@ if __name__ == "__main__":
 
     for year, months in statuses.items():
 
-        print('Year: ' + str(year))
-
         for month, statuses in months.items():
-
-            print('Month: ' + str(month))
 
             for status in statuses:
                 if len(status['Tags']) == 0:
@@ -241,28 +260,27 @@ if __name__ == "__main__":
 
                 tags.extend(status['Tags'])
 
-                print('Status score: ' + str(status['Score']))
-                for tag in status['Tags']:
-                    print('Entity: ' + tag['topic'])
-                    print('Score: ' + str(tag['importance'] * status['Score']))
-                    print('Type: ' + tag['context']['type'])
-                    print('Description: ' + tag['context']['description'])
-                    print()
-                print()
-
-            print()
-
-        print()
-
     new = []
     for tag in tags:
         new.append(Tag(topic=tag['topic'], context_fraction=tag['importance'], context=tag['context']))
 
-    print(new)
-    build_interest_topic_tree(new).show()
+    tree = build_interest_topic_tree(new)
+
+    add_interest_tags(tree, new)
+
+    tree.show()
+
+    data_nodes = tree.all_nodes()
+
+    sorted_list = sorted(data_nodes, key=lambda node: len(node.data))
+    sorted_list = reversed(sorted_list)
+    # filter empty data nodes
+    sorted_list = [node for node in sorted_list if node.data]
+
+    top = sorted_list[:10]
 
 
-#     load_latest_status_ids()
+# load_latest_status_ids()
 #     doc1 = 'It is only two months since Henrikh Mkhitaryan was the man in the same position Anthony Martial ' \
 #            'currently finds himself in. Held accountable for a poor workrate in the derby defeat to Manchester City ' \
 #            'in September, Mkhitaryan had to take the long road back into Jose Mourinho’s plans. Mkhitaryan is ' \
