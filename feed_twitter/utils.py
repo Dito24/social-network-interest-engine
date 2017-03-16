@@ -33,7 +33,10 @@ def convert_tweets_to_native_statuses(tweets):
 
 
 def generate_tweet_score(favorites, shares):
-    if not (favorites, shares):
+    if favorites is None or shares is None:
+        return None
+
+    if favorites < 0 or shares < 0:
         return None
 
     weigh_like = 1

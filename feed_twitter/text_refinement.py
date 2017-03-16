@@ -18,7 +18,7 @@ def refine_tweet_text(text):
         return None
 
     # removes re-tweet/via
-    new_text = re.sub('[\s]*RT[\s]*|[\s]*via[\s]*', '', text)
+    new_text = re.sub('[\s]*RT[\s]*|[\s]*/via[\s]*', '', text)
     # new_text = re.sub('\s?RT.*:[\s]|\s?via.*:[\s]', '', text)
 
     # removes URLs

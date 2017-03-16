@@ -79,7 +79,10 @@ def get_post_shares(post_id, graph):
 
 
 def get_post_score(reactions, shares):
-    if not (reactions, shares):
+    if reactions is None or shares is None:
+        return None
+
+    if shares < 0:
         return None
 
     weigh_like = 1
@@ -89,13 +92,19 @@ def get_post_score(reactions, shares):
 
     total = 0
     if 'like' in reactions:
-        total += (reactions['like'] * weigh_like)
+        likes = reactions['like']
+        if likes and likes > 0:
+            total += (likes * weigh_like)
 
     if 'love' in reactions:
-        total += (reactions['love'] * weigh_love)
+        love = reactions['love']
+        if love and love > 0:
+            total += (love * weigh_like)
 
     if 'wow' in reactions:
-        total += (reactions['wow'] * weigh_wow)
+        wow = reactions['wow']
+        if wow and wow > 0:
+            total += (wow * weigh_wow)
 
     total += (shares * weigh_share)
 
