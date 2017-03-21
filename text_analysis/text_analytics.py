@@ -1,18 +1,27 @@
+import os
+import sys
+
+from difflib import SequenceMatcher
 from nltk import word_tokenize
 from nltk.corpus import stopwords
 from nltk.util import ngrams
 
+try:
+    sys.path.insert(0, os.path.realpath(os.environ['INTEREST_ENGINE_PATH']))
+except KeyError:
+    sys.stderr.write("Application Root environmental variable 'INTEREST_ENGINE_PATH' not set\n")
+    sys.exit(1)
 from text_analysis.alchemyapi import AlchemyAPI
+
+# external named entity recognition service connection instance
+NER_SERVICE = AlchemyAPI()
 
 
 def extract_entities(text):
     if text is None:
-        return []
+        return None
 
-    # create the AlchemyAPI Object
-    alchemy_api = AlchemyAPI()
-
-    response = alchemy_api.entities('text', text)
+    response = NER_SERVICE.entities('text', text)
 
     entities = []
     if response['status'] == 'OK':
@@ -22,7 +31,7 @@ def extract_entities(text):
         print('Error in entity extraction call: ', response['statusInfo'])
         return []
 
-    return entities
+    return list(set(entities))
 
 
 def get_entity_fractions(entities, text):
@@ -86,6 +95,13 @@ def get_entity_frequency(entity, text):
     return total
 
 
+def calculate_word_similarity(original, retrieved):
+    if original is None or retrieved is None:
+        return None
+
+    return SequenceMatcher(None, original, retrieved).ratio()
+
+
 if __name__ == "__main__":
     doc1 = 'It is only two months since Henrikh Mkhitaryan was the man in the same position Anthony Martial ' \
            'currently finds himself in. Held accountable for a poor workrate in the derby defeat to Manchester City ' \
@@ -119,7 +135,7 @@ if __name__ == "__main__":
            "its upcoming Beauty and the Beast, a movie everyone and their grandmother will probably see this March. " \
            "Meet Belle in this one, or Emma Watson singing. This is not your average, romanticized version of King " \
            "Arthur: Legend of the Sword. Instead, it’s a movie that feels more real. Just like Russell Crowe’s 2010 " \
-           "Robin Hood. The new King Arthur movie comes out on May 12th. "
+           "Robin Hood. The new King Arthur movie comes out on May 12th."
 
     # print('entities')
     # print(extract_entities(doc1))
@@ -140,3 +156,17 @@ if __name__ == "__main__":
 
     # print(entity_frequency('Henrikh Mkhitaryan', doc1))
     # print(str(get_idf('Henrikh Mkhitaryan', doc1)))
+
+    print(calculate_word_similarity('Manchester United', 'Manchester United F.C. Reserves and '
+                                                         'Academy'))
+    print(calculate_word_similarity('manchester united reserves and academy', 'Manchester United F.C. Reserves and '
+                                                                              'Academy'))
+    print(calculate_word_similarity('manchester united', 'Manchester United F.C. Reserves and '
+                                                                              'Academy'))
+
+    print(calculate_word_similarity('Manchester United', 'Manchester United F.C.'))
+    print(calculate_word_similarity('manchester united', 'Manchester United F.C.'))
+    print()
+    print(calculate_word_similarity('European Organization for Nuclear Research', 'CERN'))
+    print(calculate_word_similarity('European Organization for Nuclear Research', 'UNESCO'))
+    print(calculate_word_similarity('European Organization for Nuclear Research', 'Nuclear Energy Agency'))

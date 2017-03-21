@@ -1,14 +1,11 @@
 import json
 import os
-import re
 import sys
 
 import requests
 from retrying import retry
 from urllib.error import HTTPError
 
-import pyld
-import rdflib
 from SPARQLWrapper import SPARQLWrapper, JSON, SPARQLExceptions
 
 try:
@@ -16,6 +13,7 @@ try:
 except KeyError:
     sys.stderr.write("Application Root environmental variable 'INTEREST_ENGINE_PATH' not set\n")
     sys.exit(1)
+from text_analysis.text_analytics import calculate_word_similarity
 from text_analysis.text_refinement import camel_case_split
 
 
@@ -48,6 +46,8 @@ def get_ontology_types(subject):
             words = camel_case_split((result["labels"]["value"]).replace("http://dbpedia.org/ontology/", ""))
             split = " ".join(words)
             types.append(split.lower().title())
+
+    types = [ontology_type for ontology_type in types if 'Wikidata' not in ontology_type]
 
     return types
 
@@ -89,62 +89,87 @@ def get_knowledge_graph_result(keyword):
     # improve mechanism to retrieve the key
     kg_key = os.environ['GOOGLE_KNOWLEDGE_GRAPH_KEY']
 
-    request = requests.get(
+    response = requests.get(
         "https://kgsearch.googleapis.com/v1/entities:search", params=dict(query=keyword, key=kg_key, limit=3))
+    json_ld = json.loads(response.text)
 
-    json_ld = json.loads(request.text)
+    entities = []
+    previous_score = -1
+    sum_of_scores = 0
 
-    normalized = pyld.jsonld.normalize(json_ld, {'algorithm': 'URDNA2015', 'format': 'application/nquads'})
+    for element in json_ld['itemListElement']:
+        # name of the entity
+        try:
+            title = element['result']['name']
+        except KeyError:
+            title = None
 
-    g = rdflib.Graph()
-    g.parse(data=normalized, format='n3')
-    g.serialize(format='turtle')
+        # entity types
+        try:
+            # get schema.org ontology types
+            # types = [n for n in element['result']['@type']]
 
-    q = """SELECT ?name ?description ?detail ?score
-    WHERE
-    {
-    ?entity a ns2:EntitySearchResult ; ns2:resultScore ?score ; ns1:result ?result .
-    ?result ns1:name ?name .
-    OPTIONAL
-    {
-    ?result ns1:description ?description .
-    }
-    OPTIONAL
-    {
-    ?result ns2:detailedDescription ?detailed .
-    ?detailed ns1:articleBody ?detail .
-    }
-    }
-    ORDER BY DESC(?score)
-    """
+            # get DBpedia ontology types
+            types = get_ontology_types(title)
+        except KeyError:
+            types = []
 
-    result = None
-    try:
-        result = g.query(q).serialize(format='csv')
-    except Exception:
-        pass
+        # description of the entity
+        try:
+            description = str(element['result']['description'])
+        except KeyError:
+            description = None
 
-    return result
+        # detailed description of the entity
+        try:
+            detail_desc = element['result']['detailedDescription']['articleBody']
+        except KeyError:
+            detail_desc = None
 
+        try:
+            score = element['resultScore']
+        except KeyError:
+            score = 0
 
-def refine_knowledge_graph_result(result):
-    if result is None:
-        return []
+        if previous_score > 0 and (score - previous_score) > 100:
+            break
 
-    rows = re.split('\r', result.decode("utf-8"))
+        previous_score = score
+        sum_of_scores += score
 
-    # discard first row of headers
-    rows = rows[1:]
+        entities.append({
+            'name': title, 'types': types, 'description': description,
+            'details': detail_desc, 'score': score
+        })
 
-    # strip string newline characters
-    for index in range(len(rows)):
-        rows[index] = (rows[index].replace('\n', '').replace('"', ''))
+    # prioritize the results based on semantics and text similarity
+    for entity in entities:
+        relevance = entity['score']
 
-    # if the first row is empty
-    if not rows[0]:
-        return []
+        relevance_as_ratio = relevance / sum_of_scores
+        similarity = calculate_word_similarity(keyword, entity['name'])
 
-    return rows
+        knowledge_weight = 0.7
+        textual_weight = 0.3
+
+        weighted_score = ((relevance_as_ratio * knowledge_weight) +
+                          (similarity * textual_weight)) / (knowledge_weight + textual_weight)
+
+        entity['score'] = weighted_score
+
+    entities = sorted(entities, key=lambda k: k['score'], reverse=True)
+
+    previous_score = 0
+    index = 0
+    for entity in entities:
+        if previous_score != 0:
+            if (previous_score / entity['score']) > 2:
+                break
+
+        previous_score = entity['score']
+        index += 1
+
+    return entities[:index]
 
 
 def get_ontology_data(keyword):
@@ -152,63 +177,21 @@ def get_ontology_data(keyword):
     attempts = 0
     result = []
     while attempts < 3 and not result:
-        result = refine_knowledge_graph_result(get_knowledge_graph_result(keyword))
+        result = get_knowledge_graph_result(keyword)
         attempts += 1
 
-    # if the result set for keyword is empty
-    if not result:
-        return []
+    return result
 
-    # split the result set data
-    entities = []
-    for line in result:
-        if not line:
-            continue
-
-        line = line.strip()
-        results = line.split(',', 1)
-        if len(results) < 2:
-            continue
-
-        results.extend(results[1].split(',', 1))
-        del results[1]
-
-        if len(results) < 3:
-            continue
-
-        results.extend(results[2].rsplit(',', 1))
-        del results[2]
-
-        try:
-            types = get_ontology_types(results[0])
-        except Exception:
-            types = []
-
-        results.append(list(set(types) - {results[1].title()}))
-
-        entities.append(results)
-
-    index = 0
-    result = None
-    for entity in entities:
-        if index > 0:
-            diff = result - float(entity[3])
-
-            if diff > 100:
-                break
-
-        result = float(entity[3])
-        index += 1
-
-    return entities[:index]
 
 if __name__ == "__main__":
-    # print(str(get_ontology_types('Manchester United F.C.')))
+    for item in get_ontology_data('manchester united reserves and academy'):
+        print(item['name'])
+        print(item['types'])
+        print(item['score'])
+        print()
 
-    # print(str(get_knowledge_graph_result('Manchester United')))
-
-    # print(get_ontology_data('manchester united'))
-    # print()
-    # print(get_ontology_data('kusal'))
-
-    print(get_ontology_types('Manchester United F.C.'))
+    for item in get_ontology_data('European Organization for Nuclear Research'):
+        print(item['name'])
+        print(item['types'])
+        print(item['score'])
+        print()

@@ -41,6 +41,9 @@ def jdefault(o):
 
 
 def get_named_entity_tags(text):
+    if text is None:
+        return None
+
     entities = extract_entities(text)
     entities = get_entity_fractions(entities, text)
 
