@@ -94,9 +94,11 @@ def get_knowledge_graph_result(keyword):
     json_ld = json.loads(response.text)
 
     entities = []
+    if 'itemListElement' not in json_ld:
+        return entities
+
     previous_score = -1
     sum_of_scores = 0
-
     for element in json_ld['itemListElement']:
         # name of the entity
         try:
@@ -110,8 +112,8 @@ def get_knowledge_graph_result(keyword):
             # types = [n for n in element['result']['@type']]
 
             # get DBpedia ontology types
-            types = get_ontology_types(title)
-        except KeyError:
+            types = sort_class_order(get_ontology_types(title))
+        except (Exception, KeyError):
             types = []
 
         # description of the entity
@@ -152,6 +154,12 @@ def get_knowledge_graph_result(keyword):
         knowledge_weight = 0.7
         textual_weight = 0.3
 
+        if similarity is None:
+            similarity = 0
+
+        if relevance_as_ratio is None:
+            relevance_as_ratio = 0
+
         weighted_score = ((relevance_as_ratio * knowledge_weight) +
                           (similarity * textual_weight)) / (knowledge_weight + textual_weight)
 
@@ -183,8 +191,44 @@ def get_ontology_data(keyword):
     return result
 
 
+def sort_class_order(types):
+    if types is None:
+        return None
+
+    ordered = []
+
+    child_parent = {}
+    for class_type in types:
+        try:
+            super_class = get_ontology_super_class(class_type)
+            child_parent[class_type] = super_class
+        except Exception:
+            return ordered
+
+    parent = return_key(child_parent, None)
+    ordered.append(parent)
+    while parent is not None:
+        parent = return_key(child_parent, parent)
+        if parent is not None:
+            ordered.append(parent)
+
+    print(ordered)
+
+    return ordered
+
+
+def return_key(dictionary, value):
+    matching = {child: parent for child, parent in dictionary.items() if parent == value}
+    matching_value = None
+
+    for child, parent in matching.items():
+        matching_value = child
+
+    return matching_value
+
+
 if __name__ == "__main__":
-    for item in get_ontology_data('manchester united reserves and academy'):
+    for item in get_ontology_data('Zlatan Ibrahimovic'):
         print(item['name'])
         print(item['types'])
         print(item['score'])
@@ -195,3 +239,15 @@ if __name__ == "__main__":
         print(item['types'])
         print(item['score'])
         print()
+
+    for item in get_ontology_data('Juan Carlos I of Spain'):
+        print(item['name'])
+        print(item['types'])
+        print(item['score'])
+        print()
+
+        # for item in get_ontology_data('Bella Hadid'):
+        #     print(item['name'])
+        #     print(item['types'])
+        #     print(item['score'])
+        #     print()

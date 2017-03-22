@@ -18,7 +18,8 @@ def convert_tweets_to_native_statuses(tweets):
     for tweet in tweets:
         refined_text = refine_tweet_text(tweet.text)
 
-        if not refined_text: continue
+        if not refined_text:
+            continue
 
         if hasattr(tweet, 'retweeted_status'):
             favorite_count = tweet.retweeted_status.favorite_count

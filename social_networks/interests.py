@@ -18,7 +18,5 @@ def compute_interests():
     update_timeline(timeline)
 
 
-
-
 if __name__ == '__main__':
     compute_interests()

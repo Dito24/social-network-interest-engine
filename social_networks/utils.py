@@ -1,9 +1,10 @@
-from datetime import datetime
 import json
 import math
 import os
 import re
 import sys
+from datetime import datetime
+
 from treelib import Node, Tree
 
 try:
@@ -12,7 +13,7 @@ except KeyError:
     sys.stderr.write("Application Root environmental variable 'INTEREST_ENGINE_PATH' not set\n")
     sys.exit(1)
 from social_networks.concepts import Tag
-from social_networks.linked_data import get_ontology_data, get_ontology_super_class
+from social_networks.linked_data import get_ontology_data
 from text_analysis.text_analytics import extract_entities, get_entity_fractions
 
 
@@ -29,7 +30,7 @@ def get_status_text(status):
     if status.text:
         print(status.text)
 
-        tags = get_named_entity_tags(status.text)
+        tags = get_entity_tags(status.text)
 
     status_record = {'Id': status.id, 'Created_At': status.created, 'Score': status.score, 'Tags': tags}
 
@@ -40,7 +41,7 @@ def jdefault(o):
     return o.__dict__
 
 
-def get_named_entity_tags(text):
+def get_entity_tags(text):
     if text is None:
         return None
 
@@ -55,12 +56,9 @@ def get_named_entity_tags(text):
             data = get_ontology_data(entity['entity'])
 
         for datum in data:
-            # TODO: Attempt to use standard Python API to get everything including the types
-            context = {'type': datum[1], 'description': datum[2], 'sub_types': datum[4]}
+            context = {'details': datum['details'], 'description': datum['description'], 'sub_types': datum['types']}
 
-            # context = {'type': datum[1], 'description': datum[2]}
-
-            tag = Tag(datum[0], context, context_fraction=entity['fraction'])
+            tag = Tag(datum['name'], context, context_fraction=entity['fraction'])
             if tag not in tags:
                 tags.append(tag)
 
@@ -75,7 +73,10 @@ def load_statuses(file_path):
         for line in file:
             status = json.loads(line)
 
-            created_at = datetime.strptime(status['Created_At'], "%Y-%m-%d %H:%M:%S")
+            created_at = get_datetime(status['Created_At'], "%Y-%m-%d %H:%M:%S")
+            if created_at is None:
+                created_at = datetime.strptime(status['Created_At'], "%Y-%m-%dT%H:%M:%S+0000")
+
             status['Created_At'] = created_at
             status['Score'] = decay_base_score(status['Score'], created_at)
 
@@ -158,12 +159,10 @@ def build_interest_topic_tree(tags):
             continue
 
         if sub_types is not None:
-            # sort the types based on ontology class hierarchy
-            sorted_types = sort_class_order(sub_types)
-
-            if sorted_types is not None:
-                sorted_types.insert(0, 'Thing')
-                create_branch(clusters, sorted_types)
+            sub_types = [sub_type for sub_type in sub_types if sub_type is not None]
+            sub_types.insert(0, 'Thing')
+            # print(sub_types)
+            create_branch(clusters, sub_types)
 
     return clusters
 
@@ -186,40 +185,6 @@ def create_branch(tree_structure, types):
         previous = node
 
 
-def sort_class_order(types):
-    if not types:
-        return None
-
-    ordered = []
-
-    child_parent = {}
-    for class_type in types:
-        try:
-            super_class = get_ontology_super_class(class_type)
-            child_parent[class_type] = super_class
-        except Exception:
-            return ordered
-
-    parent = return_key(child_parent, None)
-    ordered.append(parent)
-    while parent is not None:
-        parent = return_key(child_parent, parent)
-        if parent is not None:
-            ordered.append(parent)
-
-    return ordered
-
-
-def return_key(dictionary, value):
-    matching = {child: parent for child, parent in dictionary.items() if parent == value}
-    matching_value = None
-
-    for child, parent in matching.items():
-        matching_value = child
-
-    return matching_value
-
-
 def add_interest_tags(tree_structure, tags):
     if not (tags, tree_structure):
         return None
@@ -231,12 +196,31 @@ def add_interest_tags(tree_structure, tags):
             continue
 
         if sub_types is not None:
-            # sort the types based on ontology class hierarchy
-            sorted_types = sort_class_order(sub_types)
+            sub_types = [sub_type for sub_type in sub_types if sub_type is not None]
+            if sub_types:
+                index = 0
+                data = tree_structure.get_node(sub_types[len(sub_types) - 1]).data
 
-            if sorted_types is not None:
-                sorted_types.insert(0, 'Thing')
-                tree_structure.get_node(sorted_types[len(sorted_types) - 1]).data.append(tag)
+                while index < len(data):
+                    if data[index][0] == tag:
+                        data[index] = (tag, data[index][1] + 1)
+                        break
+
+                    index += 1
+
+                if index == len(data):
+                    data.append((tag, 1))
+                # tree_structure.get_node(sub_types[len(sub_types) - 1]).data.append(tag)
+
+
+def get_datetime(text, expected_format):
+    if text is None or expected_format is None:
+        return None
+
+    try:
+        return datetime.strptime(text, expected_format)
+    except ValueError:
+        return None
 
 
 # TODO: temp method
@@ -249,7 +233,9 @@ def get_app_root():
 
 
 if __name__ == "__main__":
-    statuses = load_statuses(get_app_root() + '/content/bookmarks.jsonl')
+    bookmarks = load_statuses(get_app_root() + '/content/bookmarks.jsonl')
+    timeline = load_statuses(get_app_root() + '/content/timeline.jsonl')
+    statuses = {**bookmarks, **timeline}
 
     tags = []
 
@@ -273,14 +259,20 @@ if __name__ == "__main__":
 
     tree.show()
 
-    data_nodes = tree.all_nodes()
+    for item in tree.get_node('Soccer Player').data:
+        print(item[0].topic)
+        print(item[0].context)
+        print(item[1])
+        print()
 
-    sorted_list = sorted(data_nodes, key=lambda node: len(node.data))
-    sorted_list = reversed(sorted_list)
-    # filter empty data nodes
-    sorted_list = [node for node in sorted_list if node.data]
-
-    top = sorted_list[:10]
+    # data_nodes = tree.all_nodes()
+    #
+    # sorted_list = sorted(data_nodes, key=lambda node: len(node.data))
+    # sorted_list = reversed(sorted_list)
+    # # filter empty data nodes
+    # sorted_list = [node for node in sorted_list if node.data]
+    #
+    # top = sorted_list[:10]
 
 
 # load_latest_status_ids()

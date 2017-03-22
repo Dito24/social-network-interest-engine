@@ -66,7 +66,7 @@ class Tag:
         if isinstance(other, self.__class__):
             topic_equals = (self.topic.lower() == other.topic.lower())
 
-            type_key = 'type'
+            type_key = 'description'
             type_equals = False
             if (type_key in self.context) & (type_key in other.context):
                 type_equals = (self.context[type_key] == other.context[type_key])
@@ -74,7 +74,10 @@ class Tag:
             sub_type_key = 'sub_types'
             sub_type_equals = False
             if (sub_type_key in self.context) & (sub_type_key in other.context):
-                sub_type_equals = (set(self.context[sub_type_key]) == set(other.context[sub_type_key]))
+                if (self.context[sub_type_key] is None) and (other.context[sub_type_key] is None):
+                    sub_type_equals = True
+                elif (self.context[sub_type_key] is not None) and (other.context[sub_type_key] is not None):
+                    sub_type_equals = (set(self.context[sub_type_key]) == set(other.context[sub_type_key]))
 
             return topic_equals & type_equals & sub_type_equals
         else:
