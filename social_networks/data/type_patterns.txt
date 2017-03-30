@@ -1,0 +1,13 @@
+Album:album by [\w]*
+Book:book by [\w]*
+BusinessPerson:ceo of [\w]*,chief executive officer of [\w]*
+College:college
+Company:[\w]* company
+Film:[0-9]* film
+Novel:novel by [\w]*
+OfficeHolder:president
+Opera:opera by [\w]*
+Province:province
+Publisher:publisher
+Song:song by [\w]*
+Town:town in [\w]*

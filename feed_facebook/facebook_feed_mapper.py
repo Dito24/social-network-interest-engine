@@ -32,7 +32,7 @@ class FacebookFeedMapper(SocialNetworkFeed):
                                            fields='id,description,updated_time,message,message_tags,name,parent_id')
         if last_id is None:
             statuses = convert_posts_to_native_statuses(posts['data'], self.graph)
-            while len(statuses) < 150:
+            while len(statuses) < 20:
                 try:
                     posts = requests.get(posts['paging']['next']).json()
                     statuses.extend(convert_posts_to_native_statuses(posts['data'], self.graph))

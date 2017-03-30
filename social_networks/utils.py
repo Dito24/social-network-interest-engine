@@ -12,8 +12,9 @@ try:
 except KeyError:
     sys.stderr.write("Application Root environmental variable 'INTEREST_ENGINE_PATH' not set\n")
     sys.exit(1)
-from social_networks.concepts import Tag
-from social_networks.linked_data import get_ontology_data
+from social_networks.concepts import SocialNetworkStatus, Tag
+from social_networks.linked_data import get_ontology_data, get_ontology_super_classes,\
+    match_type_through_description, match_type_through_description_pattern, get_tag_domains
 from text_analysis.text_analytics import extract_entities, get_entity_fractions
 
 
@@ -28,6 +29,7 @@ def store_statuses(statuses, file_path):
 def get_status_text(status):
     tags = []
     if status.text:
+        # TODO: testing purposes
         print(status.text)
 
         tags = get_entity_tags(status.text)
@@ -66,36 +68,51 @@ def get_entity_tags(text):
 
 
 # load status instances
-def load_statuses(file_path):
-    statuses = {}
+def load_status(status_text):
+    if status_text is None:
+        return None
+
+    status_dict = json.loads(status_text)
+    created_at = get_datetime(status_dict['Created_At'])
+    status_dict['Created_At'] = created_at
+    status_dict['Score'] = decay_base_score(status_dict['Score'], created_at)
+    tag_dict = status_dict['Tags']
+
+    tag_list = []
+    for tag_text in tag_dict:
+        tag_list.append(
+            Tag(topic=tag_text['topic'], context_fraction=tag_text['importance'], context=tag_text['context']))
+
+    return SocialNetworkStatus(native_identifier=status_dict['Id'], created=status_dict['Created_At'],
+                               score=status_dict['Score'], text=tag_list)
+
+
+def load_statuses_by_date(file_path):
+    status_instances = {}
 
     with open(file_path, 'r') as file:
         for line in file:
-            status = json.loads(line)
-
-            created_at = get_datetime(status['Created_At'], "%Y-%m-%d %H:%M:%S")
-            if created_at is None:
-                created_at = datetime.strptime(status['Created_At'], "%Y-%m-%dT%H:%M:%S+0000")
-
-            status['Created_At'] = created_at
-            status['Score'] = decay_base_score(status['Score'], created_at)
-
-            if status['Created_At'].year in statuses:
-
-                if not status['Created_At'].month in statuses[status['Created_At'].year]:
-                    statuses[status['Created_At'].year][status['Created_At'].month] = []
-
-                (statuses[status['Created_At'].year][status['Created_At'].month]).append(status)
-
+            status_instance = load_status(line)
+            if status_instance.created.year in status_instances:
+                if status_instance.created.month not in status_instances[status_instance.created.year]:
+                    status_instances[status_instance.created.year][status_instance.created.month] = []
+                (status_instances[status_instance.created.year][status_instance.created.month]).append(status_instance)
             else:
+                status_instances[status_instance.created.year] = {}
+                status_instances[status_instance.created.year][status_instance.created.month] = []
+                (status_instances[status_instance.created.year][status_instance.created.month]).append(status_instance)
 
-                statuses[status['Created_At'].year] = {}
+    return status_instances
 
-                statuses[status['Created_At'].year][status['Created_At'].month] = []
 
-                (statuses[status['Created_At'].year][status['Created_At'].month]).append(status)
+def load_statuses(file_path):
+    status_instances = []
 
-    return statuses
+    with open(file_path, 'r') as file:
+        for line in file:
+            status_instances.append(load_status(line))
+
+    return status_instances
 
 
 def decay_base_score(base_score, created_at):
@@ -210,10 +227,19 @@ def add_interest_tags(tree_structure, tags):
 
                 if index == len(data):
                     data.append((tag, 1))
-                # tree_structure.get_node(sub_types[len(sub_types) - 1]).data.append(tag)
 
 
-def get_datetime(text, expected_format):
+def get_datetime(text):
+    if text is None:
+        return None
+
+    datetime_instance = validate_datetime(text, "%Y-%m-%d %H:%M:%S")
+    if datetime_instance is None: datetime_instance = validate_datetime(text, "%Y-%m-%dT%H:%M:%S+0000")
+
+    return datetime_instance
+
+
+def validate_datetime(text, expected_format):
     if text is None or expected_format is None:
         return None
 
@@ -233,58 +259,91 @@ def get_app_root():
 
 
 if __name__ == "__main__":
+    # bookmarks = load_statuses_by_date(get_app_root() + '/content/bookmarks.jsonl')
+    # timeline = load_statuses_by_date(get_app_root() + '/content/timeline.jsonl')
+    # statuses = {**bookmarks, **timeline}
+
     bookmarks = load_statuses(get_app_root() + '/content/bookmarks.jsonl')
     timeline = load_statuses(get_app_root() + '/content/timeline.jsonl')
-    statuses = {**bookmarks, **timeline}
+    statuses = bookmarks + timeline
 
-    tags = []
+    generic_classes = ['Activity', 'Agent', 'Person', 'Work', 'Unknown']
 
-    for year, months in statuses.items():
+    for status in statuses[:20]:
+        tags = set(status.text)
+        for tag in tags:
+            types = tag.context['sub_types']
 
-        for month, statuses in months.items():
+            types = [sub_type for sub_type in types if sub_type is not None]
 
-            for status in statuses:
-                if len(status['Tags']) == 0:
-                    continue
+            clone = list(types)
 
-                tags.extend(status['Tags'])
+            description = tag.context['description']
 
-    new = []
-    for tag in tags:
-        new.append(Tag(topic=tag['topic'], context_fraction=tag['importance'], context=tag['context']))
+            if not types or types[len(types) - 1] in generic_classes and description is not None:
+                match = match_type_through_description(description)
+                if match is None:
+                    match = match_type_through_description_pattern(description)
+                if match is not None:
+                    try:
+                        types = get_ontology_super_classes(match)
+                    except (Exception, KeyError):
+                        types = []
 
-    tree = build_interest_topic_tree(new)
+            tag.context['sub_types'] = types
 
-    add_interest_tags(tree, new)
+            if description is None:
+                print(tag.topic + ' ' + str(clone) + ' ' + str(tag.context['sub_types']))
+                continue
 
-    tree.show()
+            print(tag.topic + ' ' + str(clone) + ' ' + str(tag.context['sub_types']) + ' ' + description)
 
-    for item in tree.get_node('Soccer Player').data:
-        print(item[0].topic)
-        print(item[0].context)
-        print(item[1])
+        print(get_tag_domains(tags))
         print()
 
-    # data_nodes = tree.all_nodes()
+    # temp implementation
+    # tags = []
+    # for year, months in statuses.items():
+    #     for month, statuses in months.items():
+    #         for status in statuses:
+    #             if status.text:
+    #                 tags.extend(status.text)
     #
-    # sorted_list = sorted(data_nodes, key=lambda node: len(node.data))
-    # sorted_list = reversed(sorted_list)
-    # # filter empty data nodes
-    # sorted_list = [node for node in sorted_list if node.data]
+    # generic_classes = ['Activity', 'Agent', 'Person', 'Work', 'Unknown']
+    # for item in tags[500:1000]:
+    #     types = item.context['sub_types']
     #
-    # top = sorted_list[:10]
+    #     types = [sub_type for sub_type in types if sub_type is not None]
+    #
+    #     clone = list(types)
+    #
+    #     description = item.context['description']
+    #
+    #     if not types or types[len(types) - 1] in generic_classes and description is not None:
+    #         match = match_type_through_description(description)
+    #         if match is None:
+    #             match = match_type_through_description_pattern(description)
+    #         if match is not None:
+    #             try:
+    #                 types = get_ontology_super_classes(match)
+    #             except (Exception, KeyError):
+    #                 types = []
+    #
+    #     item.context['sub_types'] = types
+    #
+    #     if description is None:
+    #         print(item.topic + ' ' + str(clone) + ' ' + str(item.context['sub_types']))
+    #         continue
+    #
+    #     print(item.topic + ' ' + str(clone) + ' ' + str(item.context['sub_types']) + ' ' + description)
 
-
-# load_latest_status_ids()
-#     doc1 = 'It is only two months since Henrikh Mkhitaryan was the man in the same position Anthony Martial ' \
-#            'currently finds himself in. Held accountable for a poor workrate in the derby defeat to Manchester City ' \
-#            'in September, Mkhitaryan had to take the long road back into Jose Mourinho’s plans. Mkhitaryan is ' \
-#            'a great player. Martial must learn from Mkhitaryan. Hail Henrikh Mkhitaryan. Come one Henrikh!!! ' \
-#            'European Organization for Nuclear Research is a great place to be. Anthony Martial has been to the ' \
-#            'Nuclear Research center.'
-#     tags = get_named_entity_tags(doc1)
-#
-#     for tag in tags:
-#         print(tag.topic)
-#         print(str(tag.context))
-#     update_latest_status_ids('id', 'value')
+    # tree = build_interest_topic_tree(tags)
+    # tree.show()
+    #
+    # add_interest_tags(tree, tags)
+    #
+    # for tag in tree.get_node('Person').data:
+    #     print(tag[0].topic)
+    #     print(tag[0].context['description'])
+    #     print(tag[0].context['sub_types'])
+    #     print()

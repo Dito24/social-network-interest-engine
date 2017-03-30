@@ -1,0 +1,21 @@
+Academic:Academic Conference,Academic Subject,Diploma,Educational Institution
+Architecture:Architect,Skyscraper,Tower
+Books and Literature:Book,Comic,Comics Creator,Drama,Fictional Character,Literary Genre,Multi Volume Publication,Play,Poem,Publisher,Writer
+Conflict:Military Aircraft,Military Conflict,Military Person,Military Structure,Military Vehicle,Rebellion,Tax,Weapon
+Economic:Business Person,Company,Currency,Economist,Employer,Employers Organisation,Gross Domestic Product,Gross Domestic Product Per Capita,Trade Union
+Entertainment:Artistic Genre,Broadcaster,Cartoon,Film,Group,Actor,Charts Placements,Comedian,Dancer,Film Festival,Humorist,Movie Director,Movie Genre,Musical Artist,Music Festival,Music Genre,Musical Work,Presenter,Producer,Radio Program,Television Episode,Television Director,Television Personality,Television Season,Television Show,Theatre,Theatre Director,Track List,Video Game
+Demography:Administrative Region,Demographics,Flag,Human Development Index,Population,Settlement,State,Territory
+Fashion:Beauty Queen,Fashion,Fashion Designer,Line Of Fashion,Model,Playboy Playmate
+Food & Culinary:Brewery,Chef,Food,Restaurant,Winery,Wine Region
+Health:Anatomical Structure,Biomolecule,Disease,Hospital,Gene Location,Medicine,Psychologist
+History:Archeologist,Aristocrat,Castle,Egyptologist,Family,Historic Building,Historical Period,Historic Place,Historical Region,Monument,Museum,Noble,Prehistorical Period,Protohistorical Period,Roman Emperor,World Heritage Site
+Journalism:Article,Journalist,Periodical Literature
+Law:Criminal,Judge,Law,Law Firm,Lawyer,Legal Case,Prison,System Of Law
+Leisure:Amusement Park Attraction,Artwork,Painter,Photographer,Sculptor
+Nature:Geological Period,Natural Event,Natural Place,Natural Region,Park,Species,Taxon,Zoo
+Philosophy:Philosopher,Philosophical Concept
+Politics:Ambassador,Concentration Camp,Election,Election Diagram,Geopolitical Organisation,International Organisation,Legislature,Member Resistance Movement,Monarch,Office Holder,Parliament,Political Function,Political Party,Political Concept,Politician,Politician Spouse,Trade Union,Treaty
+Religion:Cleric,Deity,Religious,Religious Building,Religious Organisation,Theological Concept
+Science & Technology:Astronaut,Camera,Celestial Body,Database,Engine,Chemical Substance,Engineer,Information Appliance,Media,Mobile Phone,Power Station,Programming Language,Rocket,Scientist,Scientific Concept,Site Of Special Scientific Interest,Software,Spacecraft,Space Mission,Space Shuttle,Space Station,Website
+Sports:Athlete,Coach,Game,Horse Trainer,Penalty Shoot Out,Referee,Sport,Sports Club,Sport Competition Result,Sports Event,Sport Facility,Sports League,Sports Manager,Sports Season,Sports Team,Sports Team Member
+Travel:Airline,Airport,Altitude,Automobile,Bus Company,Locomotive,Motorcycle,Ship,Tram,Train,Train Carriage

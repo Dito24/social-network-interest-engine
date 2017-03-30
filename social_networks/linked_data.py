@@ -1,12 +1,12 @@
 import json
 import os
+import re
 import sys
-
-import requests
-from retrying import retry
 from urllib.error import HTTPError
 
+import requests
 from SPARQLWrapper import SPARQLWrapper, JSON, SPARQLExceptions
+from retrying import retry
 
 try:
     sys.path.insert(0, os.path.realpath(os.environ['INTEREST_ENGINE_PATH']))
@@ -15,6 +15,30 @@ except KeyError:
     sys.exit(1)
 from text_analysis.text_analytics import calculate_word_similarity
 from text_analysis.text_refinement import camel_case_split
+
+
+def load_type_dictionary(file_path):
+    if file_path is None:
+        return None
+
+    content = {}
+    if os.path.exists(file_path):
+        with open(file_path, 'r') as file:
+            for line in file:
+                if line is not None:
+                    components = line.split(':')
+                    values = components[1].split(',')
+                    values = [match.rstrip() for match in values]
+
+                    content[components[0]] = values
+
+    return content
+
+
+DOMAIN_DICT = load_type_dictionary(os.environ['INTEREST_ENGINE_PATH'] + '/social_networks/data/domains.txt')
+TYPE_SYNONYM_DICT = load_type_dictionary(os.environ['INTEREST_ENGINE_PATH'] + '/social_networks/data/types.txt')
+TYPE_PATTERN_DICT = load_type_dictionary(os.environ['INTEREST_ENGINE_PATH'] + '/social_networks/data/type_patterns.txt')
+GENERIC_CLASSES = ['Activity', 'Agent', 'Person', 'Work', 'Unknown']
 
 
 @retry(wait_exponential_multiplier=1000, wait_exponential_max=20000, stop_max_delay=120000)
@@ -85,6 +109,20 @@ def get_ontology_super_class(subclass):
         return None
 
 
+def get_ontology_super_classes(subclass):
+    if subclass is None:
+        return None
+
+    superclass = subclass
+    hierarchy = []
+    while superclass is not None:
+        hierarchy.insert(0, superclass)
+        superclass = get_ontology_super_class(superclass)
+
+    hierarchy.insert(0, 'Thing')
+    return hierarchy
+
+
 def get_knowledge_graph_result(keyword):
     # improve mechanism to retrieve the key
     kg_key = os.environ['GOOGLE_KNOWLEDGE_GRAPH_KEY']
@@ -121,6 +159,17 @@ def get_knowledge_graph_result(keyword):
             description = str(element['result']['description'])
         except KeyError:
             description = None
+
+        # improving the ontology class discovery in combination with Google Knowledge graph data
+        if not types or types[len(types) - 1] in GENERIC_CLASSES and description is not None:
+            match = match_type_through_description(description)
+            if match is None:
+                match = match_type_through_description_pattern(description)
+            if match is not None:
+                try:
+                    types = get_ontology_super_classes(match)
+                except (Exception, KeyError):
+                    types = []
 
         # detailed description of the entity
         try:
@@ -171,7 +220,7 @@ def get_knowledge_graph_result(keyword):
     index = 0
     for entity in entities:
         if previous_score != 0:
-            if (previous_score / entity['score']) > 2:
+            if (previous_score / entity['score']) > 1.5:
                 break
 
         previous_score = entity['score']
@@ -195,6 +244,9 @@ def sort_class_order(types):
     if types is None:
         return None
 
+    if not types:
+        return []
+
     ordered = []
 
     child_parent = {}
@@ -212,8 +264,6 @@ def sort_class_order(types):
         if parent is not None:
             ordered.append(parent)
 
-    print(ordered)
-
     return ordered
 
 
@@ -227,27 +277,72 @@ def return_key(dictionary, value):
     return matching_value
 
 
+def match_type_through_description(description):
+    if description is None:
+        return None
+
+    for type_class, synonyms in TYPE_SYNONYM_DICT.items():
+        for item in synonyms:
+            if item == description.lower():
+                return type_class
+
+    return None
+
+
+def match_type_through_description_pattern(description):
+    if description is None:
+        return None
+
+    for type_class, pattern_strings in TYPE_PATTERN_DICT.items():
+        for item in pattern_strings:
+            pattern = re.compile(item)
+            if pattern.search(description.lower()):
+                return type_class
+
+    return None
+
+
+def match_type_domain(sub_type):
+    if sub_type is None:
+        return None
+
+    for domain, types in DOMAIN_DICT.items():
+        if sub_type in types:
+            return domain
+
+    return None
+
+
+def get_tag_domains(tags):
+    if tags is None:
+        return None
+
+    domains = []
+    for tag in tags:
+        types = tag.context['sub_types']
+        types = [sub_type for sub_type in types if sub_type is not None]
+
+        index = len(types) - 1
+        domain = None
+        while domain is None and index >= 0:
+            domain = match_type_domain(types[index])
+            index -= 1
+
+        if domain is not None:
+            domains.append(domain)
+
+    return domains
+
+
 if __name__ == "__main__":
-    for item in get_ontology_data('Zlatan Ibrahimovic'):
-        print(item['name'])
-        print(item['types'])
-        print(item['score'])
-        print()
+    # for term in get_ontology_data('Donald Trump'):
+    #     print(term['name'])
+    #     print(term['types'])
+    #     print(term['description'])
+    #     print()
+    # pattern = re.compile('[\w]* president')
+    # string = '45th U.S. President'.lower()
 
-    for item in get_ontology_data('European Organization for Nuclear Research'):
-        print(item['name'])
-        print(item['types'])
-        print(item['score'])
-        print()
+    print(DOMAIN_DICT)
 
-    for item in get_ontology_data('Juan Carlos I of Spain'):
-        print(item['name'])
-        print(item['types'])
-        print(item['score'])
-        print()
-
-        # for item in get_ontology_data('Bella Hadid'):
-        #     print(item['name'])
-        #     print(item['types'])
-        #     print(item['score'])
-        #     print()
+    # print(pattern.search(string))

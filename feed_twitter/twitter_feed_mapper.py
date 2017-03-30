@@ -42,7 +42,7 @@ class TwitterFeedMapper(SocialNetworkFeed):
 
         # load tweets from user timeline
         if last_id is None:
-            tweets = self.client.client.user_timeline(screen_name=self.client.username, count=150)
+            tweets = self.client.client.user_timeline(screen_name=self.client.username, count=20)
         else:
             tweets = self.client.client.user_timeline(screen_name=self.client.username, since_id=last_id)
 
@@ -63,7 +63,7 @@ class TwitterFeedMapper(SocialNetworkFeed):
 
         # load tweets from favorites
         if last_id is None:
-            tweets = self.client.client.favorites(screen_name=self.client.username, count=100)
+            tweets = self.client.client.favorites(screen_name=self.client.username, count=20)
         else:
             tweets = self.client.client.favorites(screen_name=self.client.username, since_id=last_id)
 
@@ -76,7 +76,7 @@ class TwitterFeedMapper(SocialNetworkFeed):
         return statuses
 
     def get_followings_feed(self):
-        tweets = self.client.client.home_timeline(screen_name=self.client.username, count=10)
+        tweets = self.client.client.home_timeline(screen_name=self.client.username, count=20)
 
         # convert tweets to application specific status objects
         statuses = convert_tweets_to_native_statuses(tweets)
