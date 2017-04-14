@@ -64,6 +64,9 @@ class Tag:
 
     def __eq__(self, other):
         if isinstance(other, self.__class__):
+            if self.topic is None or other.topic is None:
+                return False
+
             topic_equals = (self.topic.lower() == other.topic.lower())
 
             type_key = 'description'
@@ -87,6 +90,9 @@ class Tag:
         return not self.__eq__(other)
 
     def __hash__(self):
+        if self.topic is None:
+            return int(hashlib.sha1(''.lower().encode('utf-8')).hexdigest(), 16) % (10 ** 8)
+
         return int(hashlib.sha1(self.topic.lower().encode('utf-8')).hexdigest(), 16) % (10 ** 8)
 
     def __str__(self):

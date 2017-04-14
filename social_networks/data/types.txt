@@ -1,15 +1,16 @@
-Artist:artist
+Artist:artist,visual artist
 Actor:film actor,actor,actress,film actor,film actress,television actor
 AmericanFootballTeam:football team
 Animal:animal
 Award:award
-Band:band,musical group
+Band:band,musical group,orchestra
 Book:book
 BasketballTeam:basketball team
 BusinessPerson:businessman,businesswoman,business magnate
 Cemetery:cemetery
 ChemicalElement:chemical element
 Comedian:comedian
+Comic:comic series
 Company:company,corporation
 CricketGround:cricket stadium
 CricketTeam:cricket team
@@ -49,5 +50,5 @@ TelevisionSeason:television miniseries
 TelevisionShow:tv program,television show,tv series
 TelevisionStation:cable channel,tv network,television network
 TennisPlayer:tennis player
-VideoGame:video game,video game series
+VideoGame:mobile game,video game,video game series
 Writer:author

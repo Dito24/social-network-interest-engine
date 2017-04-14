@@ -317,7 +317,7 @@ def get_tag_domains(tags):
     if tags is None:
         return None
 
-    domains = []
+    domains = {}
     for tag in tags:
         types = tag.context['sub_types']
         types = [sub_type for sub_type in types if sub_type is not None]
@@ -329,9 +329,12 @@ def get_tag_domains(tags):
             index -= 1
 
         if domain is not None:
-            domains.append(domain)
+            if domain in domains:
+                domains[domain] = (domains[domain] + 1)
+            else:
+                domains[domain] = 1
 
-    return domains
+    return [domain for domain, count in domains.items() if (count / len(tags) > 0.25)]
 
 
 if __name__ == "__main__":

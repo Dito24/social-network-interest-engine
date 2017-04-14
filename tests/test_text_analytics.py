@@ -169,22 +169,26 @@ def get_accuracy_percentage(entity_frequencies, expected):
 
 
 if __name__ == "__main__":
-    true_positives = []
-    false_positives = []
-    false_negatives = []
-
-    for item in TEST_DATA:
-        entities = extract_entities(item[0])
-
-        true_positives.append(get_true_positives(item[1], entities))
-        false_positives.append(get_false_positives(item[1], entities))
-        false_negatives.append(get_false_negatives(item[1], entities))
-
-    print(true_positives)
-    print()
-    print(false_positives)
-    print()
-    print(false_negatives)
-    print()
-    print(calculate_f_measure(calculate_precision(true_positives, false_positives),
-                              calculate_recall(true_positives, false_negatives)))
+    print(extract_entities("\" I've got my day job back \" Maria Sharapova is preparing to return to tennis after a "
+                           "15 - month ban :"))
+    print(extract_entities("21 - year-old Sadeera Samarawickrama is the 2nd highest First-class run scorer in 2017 , "
+                           "how is he not in Sri Lanka squad."))
+    # true_positives = []
+    # false_positives = []
+    # false_negatives = []
+    #
+    # for item in TEST_DATA:
+    #     entities = extract_entities(item[0])
+    #
+    #     true_positives.append(get_true_positives(item[1], entities))
+    #     false_positives.append(get_false_positives(item[1], entities))
+    #     false_negatives.append(get_false_negatives(item[1], entities))
+    #
+    # print(true_positives)
+    # print()
+    # print(false_positives)
+    # print()
+    # print(false_negatives)
+    # print()
+    # print(calculate_f_measure(calculate_precision(true_positives, false_positives),
+    #                           calculate_recall(true_positives, false_negatives)))

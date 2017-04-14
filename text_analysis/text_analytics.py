@@ -26,6 +26,9 @@ def extract_entities(text):
     entities = []
     if response['status'] == 'OK':
         for entity in response['entities']:
+            if 'type' in entity:
+                if entity['type'] == 'Quantity':
+                    continue
             entities.append(entity['text'])
     else:
         print('Error in entity extraction call: ', response['statusInfo'])

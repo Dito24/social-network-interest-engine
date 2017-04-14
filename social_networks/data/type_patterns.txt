@@ -1,13 +1,16 @@
+AdministrativeRegion:county in [\w]*
 Album:album by [\w]*
 Book:book by [\w]*
 BusinessPerson:ceo of [\w]*,chief executive officer of [\w]*
 College:college
 Company:[\w]* company
 Film:[0-9]* film
+MovieDirector:[\w]* director
 Novel:novel by [\w]*
 OfficeHolder:president
 Opera:opera by [\w]*
 Province:province
 Publisher:publisher
+Singer:[\w]* singer
 Song:song by [\w]*
 Town:town in [\w]*

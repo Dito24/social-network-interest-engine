@@ -59,9 +59,6 @@ if __name__ == "__main__":
 
             print()
 
-
-
-
     # true_positives = []
     # false_positives = []
     # false_negatives = []
