@@ -58,6 +58,18 @@ def load_followings():
     return statuses
 
 
+def load_community_feed():
+    members = []
+
+    for feed in SOCIAL_NETWORK_FEED:
+        if isinstance(feed, SocialNetworkFeed):
+            feed = feed.get_community_feed()
+            if feed is not None:
+                members.extend(feed)
+
+    return members
+
+
 def update_timeline(statuses):
     if statuses:
         store_statuses(statuses, TIMELINE)

@@ -8,7 +8,7 @@ except KeyError:
     sys.stderr.write("Application Root environmental variable 'INTEREST_ENGINE_PATH' not set\n")
     sys.exit(1)
 from feed_twitter.text_refinement import refine_tweet_text
-from social_networks.concepts import SocialNetworkStatus
+from social_networks.concepts import SocialNetworkMember, SocialNetworkStatus
 from text_analysis.text_refinement import refine_entities
 
 
@@ -63,3 +63,21 @@ def get_twitter_trends(twitter_client, woe_id):
         trends.append(refine_entities(content['name']))
 
     return trends
+
+
+def get_member_instance(member_identifier, content):
+    if not member_identifier:
+        return None
+
+    return SocialNetworkMember(identifier=member_identifier, content=content)
+
+
+def get_statuses_text(username, tweets):
+    if username is None or tweets is None:
+        return None
+
+    content = []
+    for tweet in tweets:
+        content.append(refine_tweet_text(tweet.text))
+
+    return " ".join(content)

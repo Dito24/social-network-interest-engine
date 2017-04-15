@@ -1,6 +1,8 @@
 import os
 import sys
 
+from tweepy import TweepError
+
 try:
     sys.path.insert(0, os.path.realpath(os.environ['INTEREST_ENGINE_PATH']))
 except KeyError:
@@ -9,7 +11,8 @@ except KeyError:
 from social_networks.concepts import SocialNetworkFeed
 from social_networks.utils import load_latest_status_ids, update_latest_status_ids
 from feed_twitter.client import TwitterClient
-from feed_twitter.utils import convert_tweets_to_native_statuses, get_twitter_trends
+from feed_twitter.utils import convert_tweets_to_native_statuses, get_twitter_trends, get_statuses_text, \
+    get_member_instance
 
 
 class TwitterFeedMapper(SocialNetworkFeed):
@@ -84,7 +87,33 @@ class TwitterFeedMapper(SocialNetworkFeed):
         return statuses
 
     def get_community_feed(self):
-        pass
+        lists = self.client.client.lists_all(screen_name=self.client.username)
+
+        members = []
+        for community in lists[0:3]:
+            member_content = self.get_list_member_content(community.user.screen_name, community.slug)
+            if member_content is not None:
+                members.extend(member_content)
+
+        return members
+
+    def get_list_member_content(self, owner, slug):
+        if owner is None or slug is None:
+            return None
+
+        members = self.client.client.list_members(owner, slug)
+        member_screen_names = [member.screen_name for member in members]
+
+        member_content = []
+        for identifier in member_screen_names:
+            try:
+                tweets = self.client.client.user_timeline(screen_name=identifier, count=5)
+            except TweepError:
+                return None
+            member_content.append(get_member_instance(identifier, get_statuses_text(identifier, tweets)))
+
+        return member_content
+
 
 if __name__ == '__main__':
     obj = TwitterFeedMapper(access_token=os.environ['TWITTER_ACCESS_TOKEN'],
@@ -100,7 +129,7 @@ if __name__ == '__main__':
     for trend in obj.get_public_trends_feed(latitude=lat, longitude=long):
         print(trend)
 
-    # for status in obj.get_user_timeline_feed():
-    #     print(status.text)
-    #     print(status.score)
-    #     print()
+        # for status in obj.get_user_timeline_feed():
+        #     print(status.text)
+        #     print(status.score)
+        #     print()

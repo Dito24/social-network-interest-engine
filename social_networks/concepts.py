@@ -28,9 +28,20 @@ class SocialNetworkStatus:
 
     def __eq__(self, other):
         if isinstance(other, self.__class__):
-            text_equals = (self.text == other.text)
+            if type(self.text) is str and type(other.text) is str:
+                text_equals = (self.text == other.text)
+                return text_equals
+            elif type(self.text) is list and type(other.text) is list:
+                absent = []
+                if len(self.text) != len(other.text):
+                    return False
+                for item in self.text:
+                    if item not in other.text:
+                        absent.append(item)
 
-            return text_equals
+                return len(absent) == 0
+
+            return False
         else:
             return False
 
@@ -54,6 +65,33 @@ class SocialNetworkTrend:
 
     def __ne__(self, other):
         return not self.__eq__(other)
+
+
+class SocialNetworkMember:
+    def __init__(self, identifier, content):
+        self.id = identifier
+        self.content = content
+
+    def __eq__(self, other):
+        if isinstance(other, self.__class__):
+            if self.id == other.id:
+                return True
+            else:
+                return False
+        else:
+            return False
+
+    def __ne__(self, other):
+        return not self.__eq__(other)
+
+    def __hash__(self):
+        return int(hashlib.sha1(self.id.encode('utf-8')).hexdigest(), 16) % (10 ** 8)
+
+    def __str__(self):
+        return self.id
+
+    def default(self, o):
+        return o.__dict__
 
 
 class Tag:
@@ -130,24 +168,3 @@ class ZScore:
             return (obs - self.avg) * float("infinity")
         else:
             return (obs - self.avg) / self.standard_deviation()
-
-
-if __name__ == "__main__":
-    # dic1 = {'type': 1, 'sub-type': 2}
-    #
-    # dic2 = {'type': 3}
-    #
-    # print('results')
-    #
-    # if ('type' in dic1) & ('type' in dic2):
-    #     print(True)
-    #
-    # if 'sub-type' in (dic1, dic2):
-    #     print(True)
-
-    tag = Tag(topic='keyword')
-
-    tag2 = Tag(topic='wordkey')
-
-    print(tag.__hash__())
-    print(tag2.__hash__())
