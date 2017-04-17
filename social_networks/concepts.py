@@ -134,6 +134,14 @@ class Tag:
         return int(hashlib.sha1(self.topic.lower().encode('utf-8')).hexdigest(), 16) % (10 ** 8)
 
     def __str__(self):
+        if self.topic is None or self.context is None:
+            if self.topic is None and self.context is not None:
+                return '[No title] ' + str(self.context)
+            elif self.topic is not None and self.context is None:
+                return self.topic
+            else:
+                return ''
+
         return self.topic + ' ' + str(self.context)
 
 

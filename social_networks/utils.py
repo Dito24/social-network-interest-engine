@@ -13,8 +13,7 @@ except KeyError:
     sys.stderr.write("Application Root environmental variable 'INTEREST_ENGINE_PATH' not set\n")
     sys.exit(1)
 from social_networks.concepts import SocialNetworkStatus, Tag
-from social_networks.linked_data import get_ontology_data, get_ontology_super_classes,\
-    match_type_through_description, match_type_through_description_pattern, get_tag_domains
+from social_networks.linked_data import get_ontology_data
 from text_analysis.text_analytics import extract_entities, get_entity_fractions
 
 
@@ -256,94 +255,3 @@ def get_app_root():
     except KeyError:
         sys.stderr.write("Application Root environmental variable not set\n")
         sys.exit(1)
-
-
-if __name__ == "__main__":
-    # bookmarks = load_statuses_by_date(get_app_root() + '/content/bookmarks.jsonl')
-    # timeline = load_statuses_by_date(get_app_root() + '/content/timeline.jsonl')
-    # statuses = {**bookmarks, **timeline}
-
-    bookmarks = load_statuses(get_app_root() + '/content/bookmarks.jsonl')
-    timeline = load_statuses(get_app_root() + '/content/timeline.jsonl')
-    statuses = bookmarks + timeline
-
-    generic_classes = ['Activity', 'Agent', 'Person', 'Work', 'Unknown']
-
-    for status in statuses[:20]:
-        tags = set(status.text)
-        for tag in tags:
-            types = tag.context['sub_types']
-
-            types = [sub_type for sub_type in types if sub_type is not None]
-
-            clone = list(types)
-
-            description = tag.context['description']
-
-            if not types or types[len(types) - 1] in generic_classes and description is not None:
-                match = match_type_through_description(description)
-                if match is None:
-                    match = match_type_through_description_pattern(description)
-                if match is not None:
-                    try:
-                        types = get_ontology_super_classes(match)
-                    except (Exception, KeyError):
-                        types = []
-
-            tag.context['sub_types'] = types
-
-            if description is None:
-                print(tag.topic + ' ' + str(clone) + ' ' + str(tag.context['sub_types']))
-                continue
-
-            print(tag.topic + ' ' + str(clone) + ' ' + str(tag.context['sub_types']) + ' ' + description)
-
-        print(get_tag_domains(tags))
-        print()
-
-    # temp implementation
-    # tags = []
-    # for year, months in statuses.items():
-    #     for month, statuses in months.items():
-    #         for status in statuses:
-    #             if status.text:
-    #                 tags.extend(status.text)
-    #
-    # generic_classes = ['Activity', 'Agent', 'Person', 'Work', 'Unknown']
-    # for item in tags[500:1000]:
-    #     types = item.context['sub_types']
-    #
-    #     types = [sub_type for sub_type in types if sub_type is not None]
-    #
-    #     clone = list(types)
-    #
-    #     description = item.context['description']
-    #
-    #     if not types or types[len(types) - 1] in generic_classes and description is not None:
-    #         match = match_type_through_description(description)
-    #         if match is None:
-    #             match = match_type_through_description_pattern(description)
-    #         if match is not None:
-    #             try:
-    #                 types = get_ontology_super_classes(match)
-    #             except (Exception, KeyError):
-    #                 types = []
-    #
-    #     item.context['sub_types'] = types
-    #
-    #     if description is None:
-    #         print(item.topic + ' ' + str(clone) + ' ' + str(item.context['sub_types']))
-    #         continue
-    #
-    #     print(item.topic + ' ' + str(clone) + ' ' + str(item.context['sub_types']) + ' ' + description)
-
-    # tree = build_interest_topic_tree(tags)
-    # tree.show()
-    #
-    # add_interest_tags(tree, tags)
-    #
-    # for tag in tree.get_node('Person').data:
-    #     print(tag[0].topic)
-    #     print(tag[0].context['description'])
-    #     print(tag[0].context['sub_types'])
-    #     print()

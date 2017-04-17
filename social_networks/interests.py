@@ -7,23 +7,26 @@ try:
 except KeyError:
     sys.stderr.write("Application Root environmental variable 'INTEREST_ENGINE_PATH' not set\n")
     sys.exit(1)
+from social_networks.communities import get_matching_clusters
 from social_networks.linked_data import get_tag_domains
-from social_networks.updater import load_bookmarks, load_followings, load_timeline, update_bookmarks, update_timeline, \
-    load_community_feed
+from social_networks.updater import load_bookmarks, load_timeline, update_bookmarks, update_timeline
 from social_networks.utils import get_app_root, load_statuses, load_statuses_by_date
-from social_networks.communities import cluster_community_members
 
 
-def compute_interests():
-    # bookmarks = load_bookmarks()
-    # followings = load_followings()
-    # timeline = load_timeline()
-    #
-    # update_bookmarks(bookmarks)
-    # update_timeline(timeline)
+def update_statuses():
+    bookmarks = load_bookmarks()
+    timeline = load_timeline()
 
-    bookmarks = load_statuses(get_app_root() + '/content/bookmarks.jsonl')
+    update_bookmarks(bookmarks)
+    update_timeline(timeline)
+
+
+def compute_current_interests():
+    # update_statuses()
+
     timeline = load_statuses(get_app_root() + '/content/timeline.jsonl')
+    # followings = load_followings()
+    bookmarks = load_statuses(get_app_root() + '/content/bookmarks.jsonl')
 
     # 0.5 weight for the timeline content
     for status in timeline:
@@ -33,6 +36,11 @@ def compute_interests():
     for status in bookmarks:
         status.score = 0.25 * status.score
 
+    # 0.25 weight for followings content
+    # for status in followings:
+    #     status.score = 0.25 * status.score
+
+    # statuses = bookmarks + followings + timeline
     statuses = bookmarks + timeline
 
     final = []
@@ -47,30 +55,8 @@ def compute_interests():
         else:
             final.append(status)
 
-    # Current interests
-    # for item in compute_current_interests(final):
-    #     print(item[0].score)
-
-    # print(domain_frequency(statuses))
-
-    monthly_timeline_statuses = load_statuses_by_date(get_app_root() + '/content/timeline.jsonl')
-    monthly_bookmark_statuses = load_statuses_by_date(get_app_root() + '/content/bookmarks.jsonl')
-    monthly_statuses = {**monthly_timeline_statuses, **monthly_bookmark_statuses}
-
-    for monthly_content, score in compute_long_term_interests(recent_domain_count(monthly_statuses)).items():
-        print(monthly_content + ' ' + str(score))
-
-    # diversity = topic_diversity(statuses)
-    # number_of_recommendations = 10
-    # count_of_long_term_interests = round(number_of_recommendations * diversity)
-    # print(count_of_long_term_interests)
-
-
-def compute_current_interests(statuses):
-    if statuses is None:
-        return None
-
-    sorted_statuses = sorted(statuses, key=lambda status_instance: status_instance.score, reverse=True)
+    # statuses = bookmarks + timeline
+    sorted_statuses = sorted(final, key=lambda status_instance: status_instance.score, reverse=True)
 
     top = sorted_statuses[:10]
     top_interests = []
@@ -81,6 +67,36 @@ def compute_current_interests(statuses):
             top_interests.append((status, domains))
 
     return top_interests
+
+
+def compute_long_term_interests():
+    # update_statuses()
+
+    monthly_timeline_statuses = load_statuses_by_date(get_app_root() + '/content/timeline.jsonl')
+    monthly_bookmark_statuses = load_statuses_by_date(get_app_root() + '/content/bookmarks.jsonl')
+    monthly_statuses = {**monthly_timeline_statuses, **monthly_bookmark_statuses}
+
+    domain_frequencies = recent_domain_count(monthly_statuses)
+
+    domain_scores = {}
+    base_weight = 0.1
+    month_count = 0
+    sum_of_weights = 0
+    for domains in domain_frequencies:
+        weight = (1 - (month_count * base_weight))
+        sum_of_weights += weight
+        month_count += 1
+
+        for (domain, frequency) in domains:
+            if domain in domain_scores:
+                domain_scores[domain] = (frequency * weight) + domain_scores[domain]
+            else:
+                domain_scores[domain] = (frequency * weight)
+
+    for domain in domain_scores.keys():
+        domain_scores[domain] = domain_scores[domain] / sum_of_weights
+
+    return domain_scores
 
 
 def domain_frequency(statuses):
@@ -123,66 +139,30 @@ def recent_domain_count(statuses):
     return content
 
 
-def compute_long_term_interests(domain_frequencies):
-    if domain_frequencies is None:
-        return None
-
-    domain_scores = {}
-    base_weight = 0.1
-    month_count = 0
-    sum_of_weights = 0
-    for domains in domain_frequencies:
-        weight = (1 - (month_count * base_weight))
-        sum_of_weights += weight
-        month_count += 1
-
-        for (domain, frequency) in domains:
-            if domain in domain_scores:
-                domain_scores[domain] = (frequency * weight) + domain_scores[domain]
-            else:
-                domain_scores[domain] = (frequency * weight)
-
-    for domain in domain_scores.keys():
-        domain_scores[domain] = domain_scores[domain] / sum_of_weights
-
-    return domain_scores
-
-
 def compute_community_interests():
-    members = load_community_feed()
+    clusters = get_matching_clusters()
 
-    # for member in members:
-    #     print(member.id)
-    #     print(member.content)
-    #     print()
+    members = {}
+    for topic, cluster in clusters.items():
+        for member in cluster:
+            if member not in members:
+                members[member] = member.content
 
-    community_interest_tree = cluster_community_members(members[:10])
+            filtered = []
+            for tag in members[member]:
+                sub_types = tag.context['sub_types']
+                if len(sub_types) > 0:
+                    if sub_types[len(sub_types) - 1] != topic:
+                        filtered.append(tag)
 
-    community_interest_tree.show()
+            members[member] = filtered
 
-
-# def topic_diversity(statuses):
-#     if statuses is None:
-#         return None
-#
-#     universal_tag_collection = []
-#     for status in statuses:
-#         tags = set(status.text)
-#         if len(tags) > 0:
-#             for tag in tags:
-#                 if tag.topic:
-#                     universal_tag_collection.append(tag)
-#
-#     new_tag_collection = []
-#     for tag in universal_tag_collection:
-#         if tag not in new_tag_collection:
-#             print(tag.topic)
-#             new_tag_collection.append(tag)
-#
-#     return len(new_tag_collection) / len(universal_tag_collection)
+    return members
 
 
 if __name__ == '__main__':
-    compute_community_interests()
-    # compute_community_interests()
-    # compute_interests()
+    for user, items in compute_community_interests().items():
+        print(user)
+        for item in items:
+            print(item.topic)
+        print()
