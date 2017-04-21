@@ -13,7 +13,7 @@ except KeyError:
     sys.exit(1)
 from text_analysis.alchemyapi import AlchemyAPI
 
-# external named entity recognition service connection instance
+# External named entity recognition service connection instance
 NER_SERVICE = AlchemyAPI()
 
 
@@ -37,31 +37,31 @@ def extract_entities(text):
     return list(set(entities))
 
 
-def get_entity_fractions(entities, text):
-    if not entities:
-        return []
-
-    if not text:
-        return []
-
-    frequencies = []
-    total_frequencies = 0
-    for entity in entities:
-        frequency = get_entity_frequency(entity, text)
-        frequencies.append({'entity': entity, 'frequency': frequency})
-        total_frequencies += frequency
-
-    fractions = []
-    for entry in frequencies:
-        entity = entry['entity']
-
-        if total_frequencies > 0:
-            fraction = entry['frequency'] / total_frequencies
-        else:
-            fraction = 0
-        fractions.append({'entity': entity, 'fraction': fraction})
-
-    return fractions
+# def get_entity_fractions(entities, text):
+#     if not entities:
+#         return []
+#
+#     if not text:
+#         return []
+#
+#     frequencies = []
+#     total_frequencies = 0
+#     for entity in entities:
+#         frequency = get_entity_frequency(entity, text)
+#         frequencies.append({'entity': entity, 'frequency': frequency})
+#         total_frequencies += frequency
+#
+#     fractions = []
+#     for entry in frequencies:
+#         entity = entry['entity']
+#
+#         if total_frequencies > 0:
+#             fraction = entry['frequency'] / total_frequencies
+#         else:
+#             fraction = 0
+#         fractions.append({'entity': entity, 'fraction': fraction})
+#
+#     return fractions
 
 
 def get_entity_frequency(entity, text):

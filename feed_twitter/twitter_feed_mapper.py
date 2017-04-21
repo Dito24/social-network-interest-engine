@@ -20,12 +20,12 @@ class TwitterFeedMapper(SocialNetworkFeed):
         self.client = TwitterClient(username=username, user_access_token=access_token, user_access_secret=access_secret)
 
     def get_public_trends_feed(self, **coordinates):
-        # get world trends
+        # Get world trends
         global_woe_id = 1
         world_trends = get_twitter_trends(self.client, global_woe_id)
 
         if ('latitude' in coordinates) & ('longitude' in coordinates):
-            # get local trends
+            # Get local trends
             response_data = self.client.client.trends_closest(coordinates['latitude'], coordinates['longitude'])
             locality_woe_id = response_data[0]['woeid']
             local_trends = get_twitter_trends(self.client, locality_woe_id)
@@ -37,19 +37,19 @@ class TwitterFeedMapper(SocialNetworkFeed):
             return world_trends
 
     def get_user_timeline_feed(self):
-        # capture the optional id value of the tweet since which tweets are to be returned
+        # Capture the optional id value of the tweet since which tweets are to be returned
         last_id = None
         ids = load_latest_status_ids()
         if 'twitter_user_timeline' in ids:
             last_id = ids['twitter_user_timeline']
 
-        # load tweets from user timeline
+        # Load tweets from user timeline
         if last_id is None:
             tweets = self.client.client.user_timeline(screen_name=self.client.username, count=50)
         else:
             tweets = self.client.client.user_timeline(screen_name=self.client.username, since_id=last_id)
 
-        # convert tweets to application specific status objects
+        # Convert tweets to application specific status objects
         statuses = convert_tweets_to_native_statuses(tweets)
 
         if len(statuses) > 0:
@@ -58,19 +58,19 @@ class TwitterFeedMapper(SocialNetworkFeed):
         return statuses
 
     def get_bookmarks_feed(self):
-        # capture the optional id value of the tweet since which tweets are to be returned
+        # Capture the optional id value of the tweet since which tweets are to be returned
         last_id = None
         ids = load_latest_status_ids()
         if 'twitter_bookmarks' in ids:
             last_id = ids['twitter_bookmarks']
 
-        # load tweets from favorites
+        # Load tweets from favorites
         if last_id is None:
             tweets = self.client.client.favorites(screen_name=self.client.username, count=50)
         else:
             tweets = self.client.client.favorites(screen_name=self.client.username, since_id=last_id)
 
-        # convert tweets to application specific status objects
+        # Convert tweets to application specific status objects
         statuses = convert_tweets_to_native_statuses(tweets)
 
         if len(statuses) > 0:
@@ -81,7 +81,7 @@ class TwitterFeedMapper(SocialNetworkFeed):
     def get_followings_feed(self):
         tweets = self.client.client.home_timeline(screen_name=self.client.username, count=30)
 
-        # convert tweets to application specific status objects
+        # Convert tweets to application specific status objects
         statuses = convert_tweets_to_native_statuses(tweets)
 
         return statuses

@@ -58,13 +58,15 @@ def compute_current_interests():
     # statuses = bookmarks + timeline
     sorted_statuses = sorted(final, key=lambda status_instance: status_instance.score, reverse=True)
 
-    top = sorted_statuses[:10]
+    top = sorted_statuses[:33]
     top_interests = []
     for status in top:
         tags = set(status.text)
         if len(tags) > 0:
             domains = get_tag_domains(tags)
             top_interests.append((status, domains))
+
+    print(len(sorted_statuses))
 
     return top_interests
 
@@ -161,8 +163,15 @@ def compute_community_interests():
 
 
 if __name__ == '__main__':
-    for user, items in compute_community_interests().items():
-        print(user)
-        for item in items:
-            print(item.topic)
-        print()
+    for interest in compute_current_interests():
+        tag_collection = interest[0].text
+        tag_list = []
+        for tag in tag_collection:
+            tag_list.append(tag.original)
+
+        print(str(set(tag_list)) + ' points: ' + str(interest[0].score))
+    # for user, items in compute_community_interests().items():
+    #     print(user)
+    #     for item in items:
+    #         print(item.topic)
+    #     print()

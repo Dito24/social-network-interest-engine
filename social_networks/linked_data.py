@@ -72,6 +72,7 @@ def get_ontology_types(subject):
             types.append(split.lower().title())
 
     types = [ontology_type for ontology_type in types if 'Wikidata' not in ontology_type]
+    types.insert(0, 'Thing')
 
     return types
 
@@ -124,7 +125,7 @@ def get_ontology_super_classes(subclass):
 
 
 def get_knowledge_graph_result(keyword):
-    # improve mechanism to retrieve the key
+    # Improve mechanism to retrieve the key
     kg_key = os.environ['GOOGLE_KNOWLEDGE_GRAPH_KEY']
 
     response = requests.get(
@@ -138,29 +139,29 @@ def get_knowledge_graph_result(keyword):
     previous_score = -1
     sum_of_scores = 0
     for element in json_ld['itemListElement']:
-        # name of the entity
+        # Name of the entity
         try:
             title = element['result']['name']
         except KeyError:
             title = None
 
-        # entity types
+        # Entity types
         try:
-            # get schema.org ontology types
+            # Get schema.org ontology types
             # types = [n for n in element['result']['@type']]
 
-            # get DBpedia ontology types
+            # Get DBpedia ontology types
             types = sort_class_order(get_ontology_types(title))
         except (Exception, KeyError):
             types = []
 
-        # description of the entity
+        # Description of the entity
         try:
             description = str(element['result']['description'])
         except KeyError:
             description = None
 
-        # improving the ontology class discovery in combination with Google Knowledge graph data
+        # Improving the ontology class discovery in combination with Google Knowledge graph data
         if not types or types[len(types) - 1] in GENERIC_CLASSES and description is not None:
             match = match_type_through_description(description)
             if match is None:
@@ -171,7 +172,7 @@ def get_knowledge_graph_result(keyword):
                 except (Exception, KeyError):
                     types = []
 
-        # detailed description of the entity
+        # Detailed description of the entity
         try:
             detail_desc = element['result']['detailedDescription']['articleBody']
         except KeyError:
@@ -193,7 +194,7 @@ def get_knowledge_graph_result(keyword):
             'details': detail_desc, 'score': score
         })
 
-    # prioritize the results based on semantics and text similarity
+    # Prioritize the results based on semantics and text similarity
     for entity in entities:
         relevance = entity['score']
 
@@ -230,7 +231,7 @@ def get_knowledge_graph_result(keyword):
 
 
 def get_ontology_data(keyword):
-    # to avoid randomly generated empty results
+    # To avoid randomly generated empty results
     attempts = 0
     result = []
     while attempts < 3 and not result:

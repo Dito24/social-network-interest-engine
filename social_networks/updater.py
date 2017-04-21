@@ -16,7 +16,7 @@ TIMELINE = get_app_root() + '/content/timeline.jsonl'
 
 # TODO: some mechanism to get the tokens
 SOCIAL_NETWORK_FEED = [
-    # FacebookFeedMapper(os.environ.get('FACEBOOK_ACCESS_TOKEN')),
+    FacebookFeedMapper(os.environ.get('FACEBOOK_ACCESS_TOKEN')),
     TwitterFeedMapper(access_token=os.environ['TWITTER_ACCESS_TOKEN'],
                       access_secret=os.environ['TWITTER_ACCESS_SECRET'], username=os.environ['TWITTER_USERNAME'])
 ]

@@ -14,10 +14,10 @@ except KeyError:
     sys.exit(1)
 from social_networks.concepts import SocialNetworkStatus, Tag
 from social_networks.linked_data import get_ontology_data
-from text_analysis.text_analytics import extract_entities, get_entity_fractions
+from text_analysis.text_analytics import extract_entities
 
 
-# store social network statuses
+# Store social network statuses
 def store_statuses(statuses, file_path):
     with open(file_path, 'a+') as file:
         for status in statuses:
@@ -47,19 +47,22 @@ def get_entity_tags(text):
         return None
 
     entities = extract_entities(text)
-    entities = get_entity_fractions(entities, text)
+
+    # TODO: for testing
+    print(str(entities))
+    # entities = get_entity_fractions(entities, text)
 
     tags = []
     for entity in entities:
-        data = get_ontology_data(entity['entity'])
+        data = get_ontology_data(entity)
 
         if not data:
-            data = get_ontology_data(entity['entity'])
+            data = get_ontology_data(entity)
 
         for datum in data:
             context = {'details': datum['details'], 'description': datum['description'], 'sub_types': datum['types']}
 
-            tag = Tag(datum['name'], context, context_fraction=entity['fraction'])
+            tag = Tag(datum['name'], context, original=entity)
             if tag not in tags:
                 tags.append(tag)
 
@@ -80,7 +83,7 @@ def load_status(status_text):
     tag_list = []
     for tag_text in tag_dict:
         tag_list.append(
-            Tag(topic=tag_text['topic'], context_fraction=tag_text['importance'], context=tag_text['context']))
+            Tag(topic=tag_text['topic'], original=tag_text['original'], context=tag_text['context']))
 
     return SocialNetworkStatus(native_identifier=status_dict['Id'], created=status_dict['Created_At'],
                                score=status_dict['Score'], text=tag_list)

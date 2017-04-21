@@ -22,7 +22,7 @@ class FacebookFeedMapper(SocialNetworkFeed):
         pass
 
     def get_user_timeline_feed(self):
-        # capture the optional id value of the Facebook status since which posts are to be returned
+        # Capture the optional id value of the Facebook status since which posts are to be returned
         last_id = None
         ids = load_latest_status_ids()
         if 'facebook_user_timeline' in ids:

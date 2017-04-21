@@ -95,10 +95,10 @@ class SocialNetworkMember:
 
 
 class Tag:
-    def __init__(self, topic, context=None, context_fraction=0):
+    def __init__(self, topic, context=None, original=None):
         self.topic = topic
         self.context = context
-        self.importance = context_fraction
+        self.original = original
 
     def __eq__(self, other):
         if isinstance(other, self.__class__):
