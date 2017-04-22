@@ -9,7 +9,7 @@ except KeyError:
     sys.stderr.write("Application Root environmental variable 'INTEREST_ENGINE_PATH' not set\n")
     sys.exit(1)
 from feed_facebook.utils import convert_posts_to_native_statuses, get_status_index
-from social_networks.concepts import SocialNetworkFeed
+from social_networks.concepts import SocialNetworkFeed, SocialNetworkMember
 from social_networks.utils import load_latest_status_ids, update_latest_status_ids
 
 
@@ -83,7 +83,42 @@ class FacebookFeedMapper(SocialNetworkFeed):
         return followings_feed
 
     def get_community_feed(self):
-        pass
+        content = self.graph.get_connections('me', 'groups')
+        groups = content['data']
+
+        username = self.graph.get_object('me')['name']
+        print(username)
+
+        while True:
+            try:
+                more = requests.get(content['paging']['next']).json()
+                groups.extend(more['data'])
+            except KeyError:
+                break
+
+        group_members = []
+        for group in groups:
+            feed = self.graph.get_connections(group['id'], 'feed',
+                                              fields='id,description,updated_time,'
+                                                     'story,message,message_tags,name,parent_id')
+
+            filtered = [item for item in feed['data'] if 'story' in item]
+            filtered = [item for item in filtered if item['story'].startswith(username) is False]
+            statuses = convert_posts_to_native_statuses(filtered, self.graph)
+
+            members = self.graph.get_connections(group['id'], 'members')['data']
+            for member in members:
+                member_username = member['name']
+                member_statuses = [status for status in statuses if member_username in status.text]
+
+                member_content = ''
+                for status in member_statuses:
+                    member_content += (status.text + ' ')
+                member_content = member_content.strip()
+
+                group_members.append(SocialNetworkMember(identifier=member['id'], content=member_content))
+
+        return [member for member in group_members if member.content]
 
 
 if __name__ == '__main__':
@@ -94,5 +129,9 @@ if __name__ == '__main__':
     #     print(post.score)
     #     print()
 
-    for status in obj.get_followings_feed():
-        print(status.text)
+    # for status in obj.get_followings_feed():
+    #     print(status.text)
+
+    # for member in obj.get_community_feed():
+    #     print(member.id)
+    #     print(member.content)

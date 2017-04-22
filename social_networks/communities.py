@@ -30,7 +30,7 @@ def cluster_community_members(members):
 
     entities = {}
     for tag in tags:
-        entities[tag] = tag.topic
+        entities[tag] = tag.original
 
     for member in members:
         content = member.content

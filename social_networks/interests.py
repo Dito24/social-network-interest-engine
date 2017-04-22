@@ -21,7 +21,7 @@ def update_statuses():
     update_timeline(timeline)
 
 
-def compute_current_interests():
+def compute_current_interest_contexts():
     # update_statuses()
 
     timeline = load_statuses(get_app_root() + '/content/timeline.jsonl')
@@ -163,11 +163,11 @@ def compute_community_interests():
 
 
 if __name__ == '__main__':
-    for interest in compute_current_interests():
+    for interest in compute_current_interest_contexts():
         tag_collection = interest[0].text
         tag_list = []
-        for tag in tag_collection:
-            tag_list.append(tag.original)
+        for item in tag_collection:
+            tag_list.append(item.original)
 
         print(str(set(tag_list)) + ' points: ' + str(interest[0].score))
     # for user, items in compute_community_interests().items():

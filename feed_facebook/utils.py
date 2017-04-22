@@ -20,13 +20,16 @@ def convert_posts_to_native_statuses(status_data, graph):
         content = ''
         if 'name' in status:
             if status['name'] is not None:
-                content += (status['name'] + ': ')
+                content += (status['name'] + ':')
 
         if 'description' in status:
-            content += (status['description'] + ' ')
+            content += (' ' + status['description'])
 
         if 'message' in status:
-            content += status['message']
+            content += (' ' + status['message'])
+
+        if 'story' in status:
+            content += (' ' + status['story'])
 
         if content is None:
             continue
