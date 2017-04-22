@@ -69,7 +69,7 @@ def place_member(member, tree):
 
 def get_matching_clusters():
     members = load_community_feed()
-    community_interest_tree = cluster_community_members(members[:10])
+    community_interest_tree = cluster_community_members(members)
     community_interest_tree.show()
 
     # update_statuses()

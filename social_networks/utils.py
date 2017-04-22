@@ -47,9 +47,6 @@ def get_entity_tags(text):
         return None
 
     entities = extract_entities(text)
-
-    # TODO: for testing
-    print(str(entities))
     # entities = get_entity_fractions(entities, text)
 
     tags = []

@@ -28,9 +28,6 @@ def convert_posts_to_native_statuses(status_data, graph):
         if 'message' in status:
             content += (' ' + status['message'])
 
-        if 'story' in status:
-            content += (' ' + status['story'])
-
         if content is None:
             continue
 
@@ -44,6 +41,26 @@ def convert_posts_to_native_statuses(status_data, graph):
                                             created=status['updated_time'], score=score))
 
     return statuses
+
+
+def convert_community_posts_to_native_statuses(status_data, graph):
+    if status_data is None:
+        return []
+
+    native_statuses = []
+    for status in status_data:
+        status_list = convert_posts_to_native_statuses([status], graph)
+        if len(status_list) > 0:
+            native_status = status_list[0]
+
+            if 'story' in status:
+                story = status['story']
+            else:
+                story = None
+
+            native_statuses.append((native_status, story))
+
+    return native_statuses
 
 
 def get_post_reactions(post_id, graph):

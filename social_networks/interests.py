@@ -163,15 +163,15 @@ def compute_community_interests():
 
 
 if __name__ == '__main__':
-    for interest in compute_current_interest_contexts():
-        tag_collection = interest[0].text
-        tag_list = []
-        for item in tag_collection:
-            tag_list.append(item.original)
-
-        print(str(set(tag_list)) + ' points: ' + str(interest[0].score))
-    # for user, items in compute_community_interests().items():
-    #     print(user)
-    #     for item in items:
-    #         print(item.topic)
-    #     print()
+    # for interest in compute_current_interest_contexts():
+    #     tag_collection = interest[0].text
+    #     tag_list = []
+    #     for item in tag_collection:
+    #         tag_list.append(item.original)
+    #
+    #     print(str(set(tag_list)) + ' points: ' + str(interest[0].score))
+    for user, items in compute_community_interests().items():
+        print(user)
+        for item in items:
+            print(item.topic)
+        print()

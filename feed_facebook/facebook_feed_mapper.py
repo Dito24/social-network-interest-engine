@@ -8,7 +8,7 @@ try:
 except KeyError:
     sys.stderr.write("Application Root environmental variable 'INTEREST_ENGINE_PATH' not set\n")
     sys.exit(1)
-from feed_facebook.utils import convert_posts_to_native_statuses, get_status_index
+from feed_facebook.utils import convert_community_posts_to_native_statuses, convert_posts_to_native_statuses, get_status_index
 from social_networks.concepts import SocialNetworkFeed, SocialNetworkMember
 from social_networks.utils import load_latest_status_ids, update_latest_status_ids
 
@@ -85,9 +85,7 @@ class FacebookFeedMapper(SocialNetworkFeed):
     def get_community_feed(self):
         content = self.graph.get_connections('me', 'groups')
         groups = content['data']
-
         username = self.graph.get_object('me')['name']
-        print(username)
 
         while True:
             try:
@@ -101,19 +99,31 @@ class FacebookFeedMapper(SocialNetworkFeed):
             feed = self.graph.get_connections(group['id'], 'feed',
                                               fields='id,description,updated_time,'
                                                      'story,message,message_tags,name,parent_id')
+            group_feed = feed['data']
+            count = 0
+            while len(group_feed) < 30:
+                try:
+                    more = requests.get(feed['paging']['next']).json()
+                    group_feed.extend(more['data'])
 
-            filtered = [item for item in feed['data'] if 'story' in item]
+                    if count == len(group_feed):
+                        break
+                    count = len(group_feed)
+                except KeyError:
+                    break
+
+            filtered = [item for item in group_feed if 'story' in item]
             filtered = [item for item in filtered if item['story'].startswith(username) is False]
-            statuses = convert_posts_to_native_statuses(filtered, self.graph)
+            statuses = convert_community_posts_to_native_statuses(filtered, self.graph)
 
             members = self.graph.get_connections(group['id'], 'members')['data']
             for member in members:
                 member_username = member['name']
-                member_statuses = [status for status in statuses if member_username in status.text]
+                member_statuses = [status for status in statuses if member_username in status[1]]
 
                 member_content = ''
                 for status in member_statuses:
-                    member_content += (status.text + ' ')
+                    member_content += (status[0].text + ' ')
                 member_content = member_content.strip()
 
                 group_members.append(SocialNetworkMember(identifier=member['id'], content=member_content))
@@ -132,6 +142,6 @@ if __name__ == '__main__':
     # for status in obj.get_followings_feed():
     #     print(status.text)
 
-    # for member in obj.get_community_feed():
-    #     print(member.id)
-    #     print(member.content)
+    for member in obj.get_community_feed():
+        print(member.id)
+        print(member.content)

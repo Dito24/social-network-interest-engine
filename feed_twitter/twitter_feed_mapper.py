@@ -90,7 +90,7 @@ class TwitterFeedMapper(SocialNetworkFeed):
         lists = self.client.client.lists_all(screen_name=self.client.username)
 
         members = []
-        for community in lists[0:3]:
+        for community in lists:
             member_content = self.get_list_member_content(community.user.screen_name, community.slug)
             if member_content is not None:
                 members.extend(member_content)
@@ -119,17 +119,23 @@ if __name__ == '__main__':
     obj = TwitterFeedMapper(access_token=os.environ['TWITTER_ACCESS_TOKEN'],
                             access_secret=os.environ['TWITTER_ACCESS_SECRET'], username=os.environ['TWITTER_USERNAME'])
 
+    member_items = obj.get_community_feed()
+    for item in member_items:
+        print(item.id)
+        print(item.content)
+        print()
+
     # for post in obj.get_followings_feed():
     #     print(post.text)
     #     print(post.score)
     #     print()
 
-    lat = 7.2905720
-    long = 80.6337260
-    for trend in obj.get_public_trends_feed(latitude=lat, longitude=long):
-        print(trend)
+    # lat = 7.2905720
+    # long = 80.6337260
+    # for trend in obj.get_public_trends_feed(latitude=lat, longitude=long):
+    #     print(trend)
 
-        # for status in obj.get_user_timeline_feed():
-        #     print(status.text)
-        #     print(status.score)
-        #     print()
+    # for status in obj.get_user_timeline_feed():
+    #     print(status.text)
+    #     print(status.score)
+    #     print()
