@@ -171,7 +171,6 @@ if __name__ == '__main__':
     #
     #     print(str(set(tag_list)) + ' points: ' + str(interest[0].score))
     for user, items in compute_community_interests().items():
-        print(user)
         for item in items:
             print(item.topic)
         print()

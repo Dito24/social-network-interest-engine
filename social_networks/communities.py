@@ -22,6 +22,7 @@ def cluster_community_members(members):
         content.append(member.content)
     content = [user_content for user_content in content if user_content is not None]
     content = ' '.join(content)
+    print(content)
 
     # Extract named entities
     tags = get_entity_tags(content)
