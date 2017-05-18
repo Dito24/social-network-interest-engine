@@ -176,8 +176,10 @@ def build_interest_topic_tree(tags):
 
         if sub_types is not None:
             sub_types = [sub_type for sub_type in sub_types if sub_type is not None]
-            sub_types.insert(0, 'Thing')
-            # print(sub_types)
+
+            if 'Thing' not in sub_types:
+                sub_types.insert(0, 'Thing')
+
             create_branch(clusters, sub_types)
 
     return clusters
@@ -255,3 +257,14 @@ def get_app_root():
     except KeyError:
         sys.stderr.write("Application Root environmental variable not set\n")
         sys.exit(1)
+
+
+# if __name__ == "__main__":
+#     tags = get_entity_tags(
+#             "On this day in 1990, Sir Alex Ferguson won his first trophy as Manchester United boss.")
+#     build_interest_topic_tree(tags).show()
+#
+#     for tag in tags:
+#         print(tag.topic)
+#         print(tag.context)
+#         print()

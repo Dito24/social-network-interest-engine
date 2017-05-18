@@ -38,7 +38,7 @@ def load_type_dictionary(file_path):
 DOMAIN_DICT = load_type_dictionary(os.environ['INTEREST_ENGINE_PATH'] + '/social_networks/data/domains.txt')
 TYPE_SYNONYM_DICT = load_type_dictionary(os.environ['INTEREST_ENGINE_PATH'] + '/social_networks/data/types.txt')
 TYPE_PATTERN_DICT = load_type_dictionary(os.environ['INTEREST_ENGINE_PATH'] + '/social_networks/data/type_patterns.txt')
-GENERIC_CLASSES = ['Activity', 'Agent', 'Person', 'Work', 'Unknown']
+GENERIC_CLASSES = ['Thing', 'Activity', 'Agent', 'Person', 'Work', 'Unknown']
 
 
 @retry(wait_exponential_multiplier=1000, wait_exponential_max=20000, stop_max_delay=120000)
@@ -72,7 +72,8 @@ def get_ontology_types(subject):
             types.append(split.lower().title())
 
     types = [ontology_type for ontology_type in types if 'Wikidata' not in ontology_type]
-    types.insert(0, 'Thing')
+    if 'Thing' not in types:
+        types.insert(0, 'Thing')
 
     return types
 
@@ -120,12 +121,14 @@ def get_ontology_super_classes(subclass):
         hierarchy.insert(0, superclass)
         superclass = get_ontology_super_class(superclass)
 
-    hierarchy.insert(0, 'Thing')
+    if 'Thing' not in hierarchy:
+        hierarchy.insert(0, 'Thing')
+
     return hierarchy
 
 
 def get_knowledge_graph_result(keyword):
-    # Improve mechanism to retrieve the key
+    # TODO: Improve mechanism to retrieve the key
     kg_key = os.environ['GOOGLE_KNOWLEDGE_GRAPH_KEY']
 
     response = requests.get(
@@ -339,6 +342,8 @@ def get_tag_domains(tags):
 
 
 if __name__ == "__main__":
+    print(get_knowledge_graph_result('Emily Ratajkowski'))
+    # print(get_ontology_super_classes('Person'))
     # for term in get_ontology_data('Donald Trump'):
     #     print(term['name'])
     #     print(term['types'])
@@ -347,6 +352,6 @@ if __name__ == "__main__":
     # pattern = re.compile('[\w]* president')
     # string = '45th U.S. President'.lower()
 
-    print(DOMAIN_DICT)
+    # print(DOMAIN_DICT)
 
     # print(pattern.search(string))

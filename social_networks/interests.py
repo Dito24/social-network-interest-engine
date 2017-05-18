@@ -58,15 +58,13 @@ def compute_current_interest_contexts():
     # statuses = bookmarks + timeline
     sorted_statuses = sorted(final, key=lambda status_instance: status_instance.score, reverse=True)
 
-    top = sorted_statuses[:33]
+    top = sorted_statuses[:10]
     top_interests = []
     for status in top:
         tags = set(status.text)
         if len(tags) > 0:
             domains = get_tag_domains(tags)
             top_interests.append((status, domains))
-
-    print(len(sorted_statuses))
 
     return top_interests
 
@@ -144,6 +142,8 @@ def recent_domain_count(statuses):
 def compute_community_interests():
     clusters = get_matching_clusters()
 
+    print(clusters)
+
     members = {}
     for topic, cluster in clusters.items():
         for member in cluster:
@@ -163,13 +163,18 @@ def compute_community_interests():
 
 
 if __name__ == '__main__':
+    # compute_current_interest_contexts()
+
     # for interest in compute_current_interest_contexts():
     #     tag_collection = interest[0].text
-    #     tag_list = []
-    #     for item in tag_collection:
-    #         tag_list.append(item.original)
     #
-    #     print(str(set(tag_list)) + ' points: ' + str(interest[0].score))
+    #     topics = []
+    #     for tag in tag_collection:
+    #         print(tag.topic)
+    #         topics.append(tag.topic)
+    #
+    #     print('domains: ' + str(interest[1]))
+
     for user, items in compute_community_interests().items():
         for item in items:
             print(item.topic)

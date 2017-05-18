@@ -45,7 +45,7 @@ class TwitterFeedMapper(SocialNetworkFeed):
 
         # Load tweets from user timeline
         if last_id is None:
-            tweets = self.client.client.user_timeline(screen_name=self.client.username, count=50)
+            tweets = self.client.client.user_timeline(screen_name=self.client.username, count=150)
         else:
             tweets = self.client.client.user_timeline(screen_name=self.client.username, since_id=last_id)
 
@@ -66,7 +66,7 @@ class TwitterFeedMapper(SocialNetworkFeed):
 
         # Load tweets from favorites
         if last_id is None:
-            tweets = self.client.client.favorites(screen_name=self.client.username, count=50)
+            tweets = self.client.client.favorites(screen_name=self.client.username, count=75)
         else:
             tweets = self.client.client.favorites(screen_name=self.client.username, since_id=last_id)
 
