@@ -9,7 +9,7 @@ from urllib.parse import urlencode
 #     sys.stderr.write("Application Root environmental variable 'INTEREST_ENGINE_PATH' not set\n")
 #     sys.exit(1)
 # print(sys.path)
-from interests import compute_current_interest_contexts
+from interests import compute_community_interests, compute_current_interest_contexts
 
 
 class NewsItem:
@@ -65,7 +65,19 @@ def get_current_interest_news_items():
     return current_interest_news_items
 
 
+def get_community_interest_news_items():
+    community_interests = compute_community_interests()
+
+    community_interest_news_items = {}
+    for interest in community_interests:
+        topic = interest[0].topic
+        items = get_news_items([topic])
+        community_interest_news_items[interest[0]] = items
+
+    return community_interest_news_items
+
 if __name__ == '__main__':
+    print('Current interests:')
     for interests, news in get_current_interest_news_items().items():
         print(interests)
 
@@ -76,3 +88,8 @@ if __name__ == '__main__':
         #     print(link.link)
 
         print()
+
+    print('Community interest suggestions:')
+    for news_interest, news in get_community_interest_news_items().items():
+        print(news_interest.topic)
+        print(news[0].link)

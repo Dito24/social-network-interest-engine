@@ -3,8 +3,6 @@ import json
 import os
 import sys
 
-from social_networks.updater import load_community_feed
-
 try:
     sys.path.insert(0, os.path.realpath(os.environ['INTEREST_ENGINE_PATH']))
 except KeyError:
@@ -19,6 +17,8 @@ MEMBERS = get_app_root() + '/content/members.jsonl'
 
 
 def cluster_community_members(members):
+    # TODO: actual code
+
     # if not members:
     #     return None
 
@@ -30,7 +30,10 @@ def cluster_community_members(members):
     # content = [user_content for user_content in content if user_content is not None]
     # content = ' '.join(content)
 
-    # print(content)
+    # Extract named entities
+    # tags = get_entity_tags(content)
+
+    # TODO: actual code
 
     # TODO:temporary demonstration code
     # store_members(members, MEMBERS)
@@ -42,8 +45,6 @@ def cluster_community_members(members):
     content = [user_content for user_content in content if user_content is not None]
     content = ' '.join(content)
 
-    print(content)
-
     # Extract named entities
     # tags = get_entity_tags(content)
 
@@ -53,7 +54,6 @@ def cluster_community_members(members):
 
     # Build community interest tree
     interest_tree = build_interest_topic_tree(tags)
-    interest_tree.show()
 
     entities = {}
     for tag in tags:
@@ -100,9 +100,6 @@ def get_matching_clusters():
     # members = load_community_feed()
     members = None
     community_interest_tree = cluster_community_members(members)
-
-    # TODO: temporary
-    community_interest_tree.show()
 
     # update_statuses()
 

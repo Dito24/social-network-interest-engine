@@ -1,5 +1,6 @@
 import operator
 import os
+import queue as queue
 import sys
 
 try:
@@ -9,8 +10,9 @@ except KeyError:
     sys.exit(1)
 from social_networks.communities import get_matching_clusters
 from social_networks.linked_data import get_tag_domains
-from social_networks.updater import load_bookmarks, load_timeline, update_bookmarks, update_timeline
+from social_networks.updater import load_bookmarks, load_timeline, load_trends, update_bookmarks, update_timeline
 from social_networks.utils import get_app_root, load_statuses, load_statuses_by_date
+from social_networks.trends import get_social_trend
 
 
 def update_statuses():
@@ -142,8 +144,6 @@ def recent_domain_count(statuses):
 def compute_community_interests():
     clusters = get_matching_clusters()
 
-    print(clusters)
-
     members = {}
     for topic, cluster in clusters.items():
         for member in cluster:
@@ -159,7 +159,44 @@ def compute_community_interests():
 
             members[member] = filtered
 
-    return members
+    interest_pool = []
+    interest_map = {}
+    long_term_interests = compute_long_term_interests()
+
+    for user, items in members.items():
+        interest_pool.extend(items)
+
+    for tag in list(set(interest_pool)):
+        tag_domains = get_tag_domains([tag])
+        domain_score = 0
+        for domain in tag_domains:
+            if domain in long_term_interests:
+                domain_score += long_term_interests[domain]
+
+        interest_map[tag] = domain_score
+
+    sorted_map = sorted(interest_map.items(), key=operator.itemgetter(1), reverse=True)
+
+    return sorted_map[:10]
+
+
+def compute_trending_topics():
+    topics = load_trends()
+    filtered = [topic for topic in topics if topic]
+
+    # TODO: temporary
+    print(filtered)
+
+    topic_queue = queue.Queue()
+    for topic in filtered:
+        topic_queue.put(topic)
+
+    trends = []
+    get_social_trend(5, topic_queue, trends)
+
+    for trend in trends[:5]:
+        print(trend.topic)
+        print(trend.score)
 
 
 if __name__ == '__main__':
@@ -175,7 +212,7 @@ if __name__ == '__main__':
     #
     #     print('domains: ' + str(interest[1]))
 
-    for user, items in compute_community_interests().items():
-        for item in items:
-            print(item.topic)
-        print()
+    # for item in compute_community_interests():
+    #     print(item[0].topic + " " + str(item[1]))
+
+    compute_trending_topics()

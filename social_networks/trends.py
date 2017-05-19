@@ -8,6 +8,8 @@ from pytrends.request import TrendReq
 from json import JSONDecodeError
 from pytrends.request import ResponseError, RateLimitError
 
+# import queue as queue
+
 try:
     sys.path.insert(0, os.path.realpath(os.environ['INTEREST_ENGINE_PATH']))
 except KeyError:
@@ -57,7 +59,7 @@ def get_standard_score(keywords):
     try:
         data = get_historical_trends(keywords)
     except Exception:
-        print('arrived')
+        pass
 
     if not data:
         return -1
@@ -87,5 +89,17 @@ def get_social_trend(index, queue, results):
     queue.task_done()
 
 
-if __name__ == "__main__":
-    print(str(get_standard_score('‪‪New York Knicks‬, ‪Madison Square Garden‬, ‪Golden State Warriors‬‬')))
+# if __name__ == "__main__":
+#     trends = []
+#     keyword_queue = queue.Queue()
+#     keyword_queue.put('‪‪New York Knicks')
+#     keyword_queue.put('‪Madison Square Garden')
+#     keyword_queue.put('‪Golden State Warriors')
+#
+#     get_social_trend(2, keyword_queue, trends)
+#
+#     for trend in trends:
+#         print(trend.topic)
+#         print(trend.score)
+
+    # print(str(get_standard_score('‪‪New York Knicks‬, ‪Madison Square Garden‬, ‪Golden State Warriors‬‬')))
