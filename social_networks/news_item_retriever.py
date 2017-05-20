@@ -1,15 +1,5 @@
 import feedparser
-# import os
-# import sys
 from urllib.parse import urlencode
-
-# try:
-#     sys.path.insert(0, os.path.realpath(os.environ['INTEREST_ENGINE_PATH']))
-# except KeyError:
-#     sys.stderr.write("Application Root environmental variable 'INTEREST_ENGINE_PATH' not set\n")
-#     sys.exit(1)
-# print(sys.path)
-from interests import compute_community_interests, compute_current_interest_contexts
 
 
 class NewsItem:
@@ -48,48 +38,3 @@ def get_news_items(entities):
         news_items.append(NewsItem(item['title'], item['link']))
 
     return news_items
-
-
-def get_current_interest_news_items():
-    contexts = compute_current_interest_contexts()
-
-    current_interest_news_items = {}
-    for context in contexts:
-        topics = []
-        for tag in context[0].text:
-            topics.append(tag.topic)
-
-        items = get_news_items(topics)
-        current_interest_news_items[str(topics)] = items
-
-    return current_interest_news_items
-
-
-def get_community_interest_news_items():
-    community_interests = compute_community_interests()
-
-    community_interest_news_items = {}
-    for interest in community_interests:
-        topic = interest[0].topic
-        items = get_news_items([topic])
-        community_interest_news_items[interest[0]] = items
-
-    return community_interest_news_items
-
-if __name__ == '__main__':
-    print('Current interests:')
-    for interests, news in get_current_interest_news_items().items():
-        print(interests)
-
-        if news:
-            print(news[0].link)
-
-        # for link in news:
-        #     print(link.link)
-
-        print()
-
-    print('Community interest suggestions:')
-    for news_interest, news in get_community_interest_news_items().items():
-        print(news_interest.topic)
-        print(news[0].link)

@@ -73,9 +73,20 @@ def load_community_feed():
 def load_trends():
     trend_topics = []
 
+    try:
+        latitude = os.environ['LATITUDE']
+        longitude = os.environ['LONGITUDE']
+    except KeyError:
+        latitude = None
+        longitude = None
+
     for feed in SOCIAL_NETWORK_FEED:
         if isinstance(feed, SocialNetworkFeed):
-            feed = feed.get_public_trends_feed()
+            if latitude is not None and longitude is not None:
+                feed = feed.get_public_trends_feed(latitude=latitude, longitude=longitude)
+            else:
+                feed = feed.get_public_trends_feed()
+
             if feed is not None:
                 trend_topics.extend(feed)
 
@@ -90,7 +101,6 @@ def update_timeline(statuses):
 def update_bookmarks(statuses):
     if statuses:
         store_statuses(statuses, BOOKMARKS)
-
 
 # if __name__ == "__main__":
 #     for item in load_trends():

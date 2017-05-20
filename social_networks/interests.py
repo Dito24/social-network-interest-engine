@@ -2,6 +2,7 @@ import operator
 import os
 import queue as queue
 import sys
+from threading import Thread
 
 try:
     sys.path.insert(0, os.path.realpath(os.environ['INTEREST_ENGINE_PATH']))
@@ -184,19 +185,24 @@ def compute_trending_topics():
     topics = load_trends()
     filtered = [topic for topic in topics if topic]
 
-    # TODO: temporary
-    print(filtered)
-
     topic_queue = queue.Queue()
-    for topic in filtered:
+    num_of_threads = len(filtered)
+    trends = []
+
+    for topic in filtered[:20]:
         topic_queue.put(topic)
 
-    trends = []
-    get_social_trend(5, topic_queue, trends)
+    for i in range(num_of_threads):
+        worker = Thread(target=get_social_trend, args=(i, topic_queue, trends))
+        worker.setDaemon(True)
+        worker.start()
 
-    for trend in trends[:5]:
-        print(trend.topic)
-        print(trend.score)
+    for keyword in trends:
+        topic_queue.put(keyword)
+
+    topic_queue.join()
+
+    return trends[:10]
 
 
 if __name__ == '__main__':
@@ -215,4 +221,5 @@ if __name__ == '__main__':
     # for item in compute_community_interests():
     #     print(item[0].topic + " " + str(item[1]))
 
-    compute_trending_topics()
+    for result in compute_trending_topics():
+        print(result.topic + " " + str(result.score))

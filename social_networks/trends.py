@@ -62,7 +62,7 @@ def get_standard_score(keywords):
         pass
 
     if not data:
-        return -1
+        return 0
 
     for date, value in data.items():
         historical_trends.append(value)
